@@ -1,20 +1,23 @@
 'use client'
 import { Search, Globe, User, ArrowRight } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 export default function Navbar() {
   return (
-    <nav className="bg-green-800 p-4">
+    <nav className="bg-green-800 p-3 h-20">
       <div className="container mx-auto flex items-center justify-between">
 
         {/* Logo */}
-        <Image
-          src="/pie_icon.png"
-          alt="Pie Logo"
-          width={40}
-          height={40}
-          className="rounded-full"
-        />
+        <Link href="/">
+          <Image
+            src="/pie_icon.png"
+            alt="Pie Logo"
+            width={60}
+            height={60}
+            className="rounded-full cursor-pointer"
+          />
+        </Link>
 
         {/* Search */}
         <div className="flex-1 mx-8">
@@ -22,7 +25,7 @@ export default function Navbar() {
             <input
               type="search"
               placeholder="Hinted search text"
-              className="w-full px-4 py-2 rounded-md bg-white/90 pl-4 pr-10"
+              className="w-full px-4 py-2 rounded-md bg-white/90 pl-4 pr-10 text-lg"
             />
             <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-500" />
           </div>
