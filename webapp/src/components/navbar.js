@@ -1,5 +1,5 @@
 'use client'
-import { Search, Globe, User, ArrowRight } from "lucide-react"
+import { Search, Globe, User, LogOut } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -35,7 +35,9 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <Globe className="h-6 w-6 text-white cursor-pointer" />
           <User className="h-6 w-6 text-white cursor-pointer" />
-          <ArrowRight className="h-6 w-6 text-white cursor-pointer" />
+          <LogOut className="h-6 w-6 text-white cursor-pointer" 
+                  // onClick={HandleLogOut}
+          />
         </div>
       </div>
     </nav>

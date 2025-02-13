@@ -1,23 +1,28 @@
 import Navbar from "../components/navbar"
 import CourseCard from "../components/course-card"
+import Link from "next/link"
 
 export default function Page() {
   const courses = [
     {
       title: "Sistemas de Operação",
-      description: "42509-so"
+      description: "42509-so",
+      slug: "sistemas-de-operacao"
     },
     {
       title: "Fundamentos de Programação",
-      description: "3224-fp"
+      description: "3224-fp",
+      slug: "fundamentos-de-programacao"
     },
     {
       title: "Arquitetura de Computadores I",
-      description: "41948-ac-1"
+      description: "41948-ac-1",
+      slug: "arquitetura-de-computadores-1"
     },
     {
       title: "Compiladores",
-      description: "41469-c"
+      description: "41469-c",
+      slug: "compiladores"
     },
   ];
 
@@ -30,7 +35,9 @@ export default function Page() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course, index) => (
-            <CourseCard key={index} title={course.title} description={course.description} />
+            <Link key={index} href={'/courses/${course.slug}'}>
+              <CourseCard title={course.title} description={course.description} />
+            </Link>
           ))}
         </div>
       </main>
