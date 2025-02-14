@@ -12,7 +12,7 @@ async function getCourseData(slug) {
       title: "Fundamentos de Programação",
       description: "Introduction to programming basics.",
     },
-    "arquitetura-de-computadores-i": {
+    "arquitetura-de-computadores-1": {
       title: "Arquitetura de Computadores I",
       description: "Study the architecture of modern computers.",
     },
