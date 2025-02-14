@@ -55,7 +55,7 @@ export default function Page() {
         ):(
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course, index) => (
-            <Link key={index} href={'/courses/${course.slug}'}>
+            <Link key={index} href={`/course/${course.slug}`}>
               <CourseCard title={course.title} description={course.description} />
             </Link>
           ))}

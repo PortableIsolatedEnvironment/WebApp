@@ -4,7 +4,7 @@ export default function CourseCard({ title, description}) {
         <h2 className="text-3xl font-semibold text-white mb-4">{title}</h2>
         <p className="text-md text-gray-400">{description}</p>
       </div>
-    )
+    );
   }
   
   

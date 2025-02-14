@@ -22,7 +22,7 @@ async function getCourseData(slug) {
 }
 
 export default async function CoursePage({ params }) {
-  const { slug } = params;
+  const { slug } = await params;
   const course = await getCourseData(slug); // Fetch course from DB
 
   if (!course) {
