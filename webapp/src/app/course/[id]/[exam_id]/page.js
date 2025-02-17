@@ -16,8 +16,8 @@ async function getExamData(courseSlug, examId) {
 }
 
 export default async function ExamPage({ params }) {
-  const { slug, exam_id } = await params;
-  const exam = await getExamData(slug, exam_id);
+  const { id, exam_id } = await params;
+  const exam = await getExamData(id, exam_id);
 
   if (!exam) {
     return notFound();

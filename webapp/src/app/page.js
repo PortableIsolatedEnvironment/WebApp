@@ -10,22 +10,22 @@ export default function Page() {
     {
       title: "Sistemas de Operação",
       description: "42509-so",
-      slug: "sistemas-de-operacao"
+      id: "sistemas-de-operacao"
     },
     {
       title: "Fundamentos de Programação",
       description: "3224-fp",
-      slug: "fundamentos-de-programacao"
+      id: "fundamentos-de-programacao"
     },
     {
       title: "Arquitetura de Computadores I",
       description: "41948-ac-1",
-      slug: "arquitetura-de-computadores-1"
+      id: "arquitetura-de-computadores-1"
     },
     {
       title: "Compiladores",
       description: "41469-c",
-      slug: "compiladores"
+      id: "compiladores"
     },
   ];
 
@@ -38,7 +38,7 @@ export default function Page() {
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(query) ||
     course.description.toLowerCase().includes(query) ||
-    course.slug.toLowerCase().includes(query)
+    course.id.toLowerCase().includes(query)
   );
   
 
@@ -55,7 +55,7 @@ export default function Page() {
         ):(
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course, index) => (
-            <Link key={index} href={`/course/${course.slug}`}>
+            <Link key={index} href={`/course/${course.id}`}>
               <CourseCard title={course.title} description={course.description} />
             </Link>
           ))}
@@ -63,6 +63,6 @@ export default function Page() {
        )} 
       </main>
     </div>
-  )
+  );
 }
 
