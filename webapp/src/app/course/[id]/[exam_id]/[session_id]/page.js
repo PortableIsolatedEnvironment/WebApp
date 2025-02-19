@@ -1,14 +1,10 @@
-import { headers } from "next/headers";
 import { Button } from "@/components/ui/button";
 
 export default async function SessionPage({ params }) {
-  const referer = headers().get("referer"); // get the referer header
-  console.log("Referer:", referer);
-  console.log("Previous page:", )
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold">AAAAA</h1>
+      <h1 className="text-4xl font-bold">Session Page</h1>
 
       {/* Back button */}
       <div className="mt-8">

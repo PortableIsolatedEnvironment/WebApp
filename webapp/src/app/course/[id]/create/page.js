@@ -1,7 +1,3 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
-
-
 
 
 export default function CreateExamPage() {

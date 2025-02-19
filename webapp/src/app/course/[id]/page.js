@@ -88,12 +88,7 @@ export default async function CoursePage({ params }) {
           ))}
         </div>
 
-
-
-
-
-
-        {/* Back Button */}
+        {/* TODO: Create Component to reuse */}
         <div className="mt-8">
           <Button variant="outline" className="text-white bg-[#1C1C1C] hover:bg-[#242424]">
             Back
