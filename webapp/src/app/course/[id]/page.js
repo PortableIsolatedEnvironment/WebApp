@@ -5,6 +5,7 @@ import CourseCard from "../../../components/course-card";
 import Link from "next/link";
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import BackButton from "@/components/back-button";
 
 
 async function getCourseData(id) {
@@ -88,14 +89,9 @@ export default async function CoursePage({ params }) {
           ))}
         </div>
 
-        {/* TODO: Create Component to reuse */}
         <div className="mt-8">
-          <Button variant="outline" className="text-white bg-[#1C1C1C] hover:bg-[#242424]">
-            Back
-          </Button>
+        <BackButton />
         </div>
-
-
 
         {/* Floating Action Button */}
         <Link href={`/course/${course.id}/create`}>
