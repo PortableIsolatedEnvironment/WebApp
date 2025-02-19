@@ -96,6 +96,7 @@ export default async function CoursePage({ params }) {
         </div>
 
 
+
         {/* Floating Action Button */}
         <Link href={`/course/${course.id}/create`}>
           <Button size="icon" className="fixed bottom-10 right-10 h-20 w-20 rounded-full bg-[#006B3F] hover:bg-[#005832]">
