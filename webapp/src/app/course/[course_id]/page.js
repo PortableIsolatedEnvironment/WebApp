@@ -5,17 +5,17 @@ import Link from "next/link";
 import { Plus} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BackButton from "@/components/back-button";
-import ExamCard from "@/components/exam-card";
+import ExamCard from "@/components/editable-card";
 import CourseData from "@/data/courses.json";
 
-async function getCourseData(id) {
-  const course = CourseData.find((course) => course.id == id);
+async function getCourseData(course_id) {
+  const course = CourseData.find((course) => course.id == course_id);
   return course;
 }
 
 export default async function CoursePage({ params }) {
-  const { id } = await params;
-  const course = await getCourseData(id);
+  const { course_id } = await params;
+  const course = await getCourseData(course_id);
 
   if (!course) {
     return notFound(); // Show 404 if course doesn't exist
@@ -30,8 +30,8 @@ export default async function CoursePage({ params }) {
             {course.exams.map((exam) => (
               <ExamCard
                 key={exam.id}
-                title={exam.name}
-                description={exam.description}
+                name={exam.name}
+                // description={exam.description} // This line is commented out because the description is not present in the JSON file
                 link={`/course/${course.id}/${exam.id}`}
                 edit_link={`/course/${course.id}/${exam.id}/edit_exam`}
               />
