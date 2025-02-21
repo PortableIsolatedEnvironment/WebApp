@@ -10,12 +10,14 @@
                 "sessions": [
                     {
                         "id": 1,
+                        "name": "Sessao 1",
                         "date": "2024-10-14",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 2,
+                        "name": "Sessao 2",
                         "date": "2024-10-14",
                         "hour": "14:00",
                         "room": "419"
@@ -28,12 +30,14 @@
                 "sessions": [
                     {
                         "id": 3,
+                        "name": "Sessao 1",
                         "date": "2024-11-25",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 4,
+                        "name": "Sessao 2",
                         "date": "2024-11-25",
                         "hour": "14:00",
                         "room": "419"
@@ -46,6 +50,7 @@
                 "sessions": [
                     {
                         "id": 5,
+                        "name": "Sessao 1",
                         "date": "2025-01-14",
                         "hour": "10:00",
                         "room": "ANF IV"
@@ -58,6 +63,7 @@
                 "sessions": [
                     {
                         "id": 6,
+                        "name": "Sessao 1",
                         "date": "2025-02-03",
                         "hour": "10:00",
                         "room": "ANF IV"
@@ -77,12 +83,14 @@
                 "sessions": [
                     {
                         "id": 7,
+                        "name": "Sessao 1",
                         "date": "2024-10-14",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 8,
+                        "name": "Sessao 2",
                         "date": "2024-10-14",
                         "hour": "14:00",
                         "room": "419"
@@ -95,12 +103,14 @@
                 "sessions": [
                     {
                         "id": 9,
+                        "name": "Sessao 1",
                         "date": "2024-11-25",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 10,
+                        "name": "Sessao 2",
                         "date": "2024-11-25",
                         "hour": "14:00",
                         "room": "419"
@@ -113,6 +123,7 @@
                 "sessions": [
                     {
                         "id": 11,
+                        "name": "Sessao 1",
                         "date": "2025-01-14",
                         "hour": "10:00",
                         "room": "ANF IV"
@@ -125,6 +136,7 @@
                 "sessions": [
                     {
                         "id": 12,
+                        "name": "Sessao 1",
                         "date": "2025-02-03",
                         "hour": "10:00",
                         "room": "ANF IV"
@@ -144,12 +156,14 @@
                 "sessions": [
                     {
                         "id": 13,
+                        "name": "Sessao 1",
                         "date": "2024-10-14",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 14,
+                        "name": "Sessao 2",
                         "date": "2024-10-14",
                         "hour": "14:00",
                         "room": "419"
@@ -162,12 +176,14 @@
                 "sessions": [
                     {
                         "id": 15,
+                        "name": "Sessao 1",
                         "date": "2024-11-25",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 16,
+                        "name": "Sessao 2",
                         "date": "2024-11-25",
                         "hour": "14:00",
                         "room": "419"
@@ -180,6 +196,7 @@
                 "sessions": [
                     {
                         "id": 17,
+                        "name": "Sessao 1",
                         "date": "2025-01-14",
                         "hour": "10:00",
                         "room": "ANF IV"
@@ -192,6 +209,7 @@
                 "sessions": [
                     {
                         "id": 18,
+                        "name": "Sessao 1",
                         "date": "2025-02-03",
                         "hour": "10:00",
                         "room": "ANF IV"
@@ -211,12 +229,14 @@
                 "sessions": [
                     {
                         "id": 19,
+                        "name": "Sessao 1",
                         "date": "2024-10-14",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 20,
+                        "name": "Sessao 2",
                         "date": "2024-10-14",
                         "hour": "14:00",
                         "room": "419"
@@ -229,12 +249,14 @@
                 "sessions": [
                     {
                         "id": 21,
+                        "name": "Sessao 1",
                         "date": "2024-11-25",
                         "hour": "10:00",
                         "room": "419"
                     },
                     {
                         "id": 22,
+                        "name": "Sessao 2",
                         "date": "2024-11-25",
                         "hour": "14:00",
                         "room": "419"
@@ -247,6 +269,7 @@
                 "sessions": [
                     {
                         "id": 23,
+                        "name": "Sessao 1",
                         "date": "2025-01-14",
                         "hour": "10:00",
                         "room": "ANF IV"
@@ -259,6 +282,7 @@
                 "sessions": [
                     {
                         "id": 24,
+                        "name": "Sessao 1",
                         "date": "2025-02-03",
                         "hour": "10:00",
                         "room": "ANF IV"
