@@ -1,57 +1,21 @@
 
 import { notFound } from "next/navigation";
-import Navbar from "../../../components/navbar";
-import TestList from "../../../components/test-list";
+import Navbar from "@/components/navbar";
 import Link from "next/link";
 import { Plus} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BackButton from "@/components/back-button";
-
+import ExamCard from "@/components/exam-card";
+import CourseData from "@/data/courses.json";
 
 async function getCourseData(id) {
-  // Simulate fetching from a database (Replace this with real DB query)
-  const courses = [
-    {
-      id: "sistemas-de-operacao",
-      title: "Sistemas de Operação",
-      tests: [
-        { id: "0", title: "Teste Prático 24/25", description: "Description" },
-        { id: "1", title: "Teste Treino 24/25", description: "Description" },
-        { id: "2", title: "Teste Teorico 24/25", description: "Description" },
-      ],
-    },
-    {
-      id: "fundamentos-de-programacao",
-      title: "Fundamentos de Programação",
-      tests: [
-        { id: "0", title: "Teste Prático FP", description: "Description" },
-        { id: "1", title: "Teste Treino FP", description: "Description" },
-      ],
-    },
-    {
-      id: "arquitetura-de-computadores-1",
-      title: "Arquitetura de Computadores I",
-      tests: [
-        { id: "0", title: "Teste Prático AC1", description: "Description" },
-      ],
-    },
-    {
-      id: "compiladores",
-      title: "Compiladores",
-      tests: [
-        { id: "0", title: "Teste Prático Comp", description: "Description" },
-      ],
-    },
-  ];
-
-  return courses.find(course => course.id === id) || null;
+  const course = CourseData.find((course) => course.id == id);
+  return course;
 }
-
-
 
 export default async function CoursePage({ params }) {
   const { id } = await params;
-  const course = await getCourseData(id); // Fetch course from DB
+  const course = await getCourseData(id);
 
   if (!course) {
     return notFound(); // Show 404 if course doesn't exist
@@ -61,10 +25,18 @@ export default async function CoursePage({ params }) {
     <div className="min-h-screen bg-white">
       <Navbar />
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">{course.title}</h1>
-
-        {/* Dynamically Generate Test Cards */}
-        <TestList tests={course.tests} courseId={id} />
+        <h1 className="text-4xl font-bold mb-8">{course.name}</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {course.exams.map((exam) => (
+              <ExamCard
+                key={exam.id}
+                title={exam.name}
+                description={exam.description}
+                link={`/course/${course.id}/${exam.id}`}
+                edit_link={`/course/${course.id}/${exam.id}/edit_exam`}
+              />
+            ))}
+          </div>
 
         {/* Back Button */}
         <div className="mt-8">
@@ -72,7 +44,7 @@ export default async function CoursePage({ params }) {
         </div>
 
         {/* Floating Action Button - Bottom Left */}
-        <Link href={`/course/${course.id}/create`}>
+        <Link href={`/course/${course.id}/create_exam`}>
           <Button 
             size="icon" 
             className="fixed bottom-40 right-40 h-24 w-24 rounded-full bg-[#008F4C] hover:bg-[#006B3F] shadow-lg border-4 border-white"

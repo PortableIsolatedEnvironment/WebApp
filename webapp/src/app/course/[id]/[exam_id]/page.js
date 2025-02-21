@@ -1,9 +1,10 @@
 import BackButton from "@/components/back-button"
 import Navbar from "@/components/navbar"
-import TestSession from "@/components/test-session"
+import TestSession from "@/components/session-list"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { notFound } from "next/navigation"
 
 async function getCourseData(id) {
   const courses = [

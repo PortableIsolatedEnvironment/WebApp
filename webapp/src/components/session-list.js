@@ -1,6 +1,6 @@
 "use client"; // Ensures this is a Client Component
 
-import TestCard from "./test-card";
+import TestCard from "./exam-card";
 import { useState } from "react";
 
 export default function TestSession({ sessions, courseId }) {
