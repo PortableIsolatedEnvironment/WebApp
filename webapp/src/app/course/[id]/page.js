@@ -1,9 +1,9 @@
 
 import { notFound } from "next/navigation";
 import Navbar from "../../../components/navbar";
-import CourseCard from "../../../components/course-card";
+import TestList from "../../../components/test-list";
 import Link from "next/link";
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BackButton from "@/components/back-button";
 
@@ -15,37 +15,38 @@ async function getCourseData(id) {
       id: "sistemas-de-operacao",
       title: "Sistemas de Operação",
       tests: [
-        { title: "Teste Prático 24/25", description: "Description" },
-        { title: "Teste Treino 24/25", description: "Description" },
-        { title: "Teste Teorico 24/25", description: "Description" },
+        { id: "0", title: "Teste Prático 24/25", description: "Description" },
+        { id: "1", title: "Teste Treino 24/25", description: "Description" },
+        { id: "2", title: "Teste Teorico 24/25", description: "Description" },
       ],
     },
     {
       id: "fundamentos-de-programacao",
       title: "Fundamentos de Programação",
       tests: [
-        { title: "Teste Prático FP", description: "Description" },
-        { title: "Teste Treino FP", description: "Description" },
+        { id: "0", title: "Teste Prático FP", description: "Description" },
+        { id: "1", title: "Teste Treino FP", description: "Description" },
       ],
     },
     {
       id: "arquitetura-de-computadores-1",
       title: "Arquitetura de Computadores I",
       tests: [
-        { title: "Teste Prático AC1", description: "Description" },
+        { id: "0", title: "Teste Prático AC1", description: "Description" },
       ],
     },
     {
       id: "compiladores",
       title: "Compiladores",
       tests: [
-        { title: "Teste Prático Comp", description: "Description" },
+        { id: "0", title: "Teste Prático Comp", description: "Description" },
       ],
     },
   ];
 
-  return courses.find(course => course.id === id) || null; // Ensure it matches the id format
+  return courses.find(course => course.id === id) || null;
 }
+
 
 
 export default async function CoursePage({ params }) {
@@ -63,42 +64,22 @@ export default async function CoursePage({ params }) {
         <h1 className="text-4xl font-bold mb-8">{course.title}</h1>
 
         {/* Dynamically Generate Test Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {course.tests.map((test, index) => (
-            <CourseCard key={index} title={test.title} description={test.description}>
-              <div className="group relative rounded-lg border bg-[#1C1C1C] p-6 hover:bg-[#242424] transition-colors">
-                {/* Clicking this div navigates */}
-                <Link href={`/course/${id}/test/${index}`}>
-                  <div className="flex items-center justify-between cursor-pointer">
-                    <h2 className="text-lg font-semibold text-white">{test.title}</h2>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-400">{test.description}</p>
-                </Link>
+        <TestList tests={course.tests} courseId={id} />
 
-                {/* Buttons remain outside Link */}
-                <div className="absolute top-4 right-4 flex space-x-2">
-                  <Button variant="ghost" size="icon" className="text-white">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-white">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CourseCard>
-          ))}
-        </div>
-
+        {/* Back Button */}
         <div className="mt-8">
-        <BackButton />
+          <BackButton />
         </div>
 
-        {/* Floating Action Button */}
+        {/* Floating Action Button - Bottom Left */}
         <Link href={`/course/${course.id}/create`}>
-          <Button size="icon" className="fixed bottom-10 right-10 h-20 w-20 rounded-full bg-[#006B3F] hover:bg-[#005832]">
-            <Plus size={60} className="h-20 w-20" />
+          <Button 
+            size="icon" 
+            className="fixed bottom-40 right-40 h-24 w-24 rounded-full bg-[#008F4C] hover:bg-[#006B3F] shadow-lg border-4 border-white"
+          >
+            <Plus className="w-16 h-16 text-white" />
           </Button>
-          </Link>
+        </Link>
       </main>
     </div>
     );
