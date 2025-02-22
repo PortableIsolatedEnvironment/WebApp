@@ -99,7 +99,7 @@ export default async function SessionPage({ params }) {
                 <TableCell>Connected</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon">
-                    ⚙
+                    ⚙   {/*FALTA METER ISTO A DAR REDIRECT PRA PROXIMA PAGINA  */}
                   </Button>
                 </TableCell>
               </TableRow>
