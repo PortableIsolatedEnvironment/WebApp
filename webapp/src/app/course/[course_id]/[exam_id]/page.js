@@ -1,5 +1,4 @@
 import BackButton from "@/components/back-button"
-import Navbar from "@/components/navbar"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,7 +26,6 @@ if (!exam) {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">{exam.name}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

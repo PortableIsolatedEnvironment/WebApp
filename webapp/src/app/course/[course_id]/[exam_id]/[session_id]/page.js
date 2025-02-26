@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import Navbar from "@/components/navbar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import BackButton from "@/components/back-button";
 
@@ -7,7 +6,6 @@ export default async function SessionPage({ params }) {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">DINAMICO</h1>
         {/* Generate Code Section */}

@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import PopupButton from "@/components/ui/button-popup";
 import BackButton from "@/components/back-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Navbar from "@/components/navbar";
 
 export default function ExamCreation() {
   const [title, setTitle] = useState("");
@@ -23,8 +22,6 @@ export default function ExamCreation() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
-      <Navbar />
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl p-8">
