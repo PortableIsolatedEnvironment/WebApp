@@ -28,6 +28,7 @@ export default function ExamCreation() {
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl p-8">
+        <h1 className="text-2xl font-semibold">Create Exam</h1>
         <form onSubmit={handleSubmit} className="grid gap-6">
           {/* Título */}
           <div className="space-y-2">
