@@ -23,11 +23,11 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {  
-  const[searchQuery, setSearchQuery] = useState("");
+  // const[searchQuery, setSearchQuery] = useState("");
   return (
     <html lang="en">
       <body>
-        <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <Navbar />
         <main className="container mx-auto px-4">
         {children}
         </main>
