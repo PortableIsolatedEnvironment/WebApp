@@ -4,21 +4,16 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
 import SessionCard from "@/components/editable-card"
-import ExamData from "@/data/courses.json"
-
-async function getExamData(course_id, exam_id) {
-  const course = ExamData.find((course) => course.id == course_id);
-  if (!course) {
-    return null;
-  }
-  const exam = course.exams.find((exam) => exam.id == exam_id);
-  return exam;
-}
+import { courseService } from "@/api/services/courseService"
+import { examService } from "@/api/services/examService"
+import { sessionService } from "@/api/services/sessionService"
 
 
 export default async function ExamPage({ params }) {
   const { course_id, exam_id } = await params;
-  const exam = await getExamData(course_id, exam_id);
+  const course = await courseService.getCoursebyID(course_id);
+  const exam = await examService.getExams(course_id, exam_id);
+  const sessions = await sessionService.getSessions(course_id, exam_id);
 
 if (!exam) {
     return notFound(); // Show 404 if exam or course doesn't exist
@@ -29,12 +24,12 @@ if (!exam) {
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">{exam.name}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {exam.sessions.map((session) => (
+            {sessions.map((session) => (
               <SessionCard
                 key={session.id}
                 name={session.name}
                 description={session.date}
-                link={`/course/${course_id}/${exam.id}/${session.id}`}
+                link={`/course/${course_id}/${exam_id}/${session.id}`}
                 edit_link={`/course/${course_id}/${exam.id}/${session.id}/edit_session`}
               />
             ))}

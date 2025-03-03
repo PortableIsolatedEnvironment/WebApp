@@ -1,7 +1,7 @@
 
 const coursePath = (courseId) => `/course/${courseId}`;
-const examPath = (courseId, examId) => `${coursePath(courseId)}/exam/${examId}`;
-const sessionPath = (courseId, examId, sessionId) => `${examPath(courseId, examId)}/session/${sessionId}`;
+const examPath = (courseId, examId) => `${coursePath(courseId)}/${examId}`;
+const sessionPath = (courseId, examId, sessionId) => `${examPath(courseId, examId)}/${sessionId}`;
 
 export const ENDPOINTS = {
   // Course endpoints

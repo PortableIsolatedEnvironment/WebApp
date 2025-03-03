@@ -1,20 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import BackButton from "@/components/back-button";
+import { sessionService } from "@/api/services/sessionService";
 
 export default async function SessionPage({ params }) {
-
+  const { course_id, exam_id, session_id } = await params;
+  const session = await sessionService.getSession(course_id, exam_id, session_id);
+  console.log(session);  
+  
   return (
     <div className="min-h-screen bg-white">
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">DINAMICO</h1>
+        <h1 className="text-4xl font-bold mb-8">{session.name}</h1>
         {/* Generate Code Section */}
         <div className="flex flex-col items-center justify-center mb-12 mt-8">
           <div className="flex flex-col items-center gap-6 p-8 rounded-lg bg-gray-50 w-full max-w-2xl">
-            <Button variant="outline" className="bg-gray-100 text-lg px-8 py-6 h-auto">
-              Generate Code
-            </Button>
-            <div className="text-4xl font-mono font-semibold tracking-wider">QW5D-1WRC</div>
+            <div className="text-4xl font-mono font-semibold tracking-wider">{session.id}</div>
           </div>
         </div> 
       
