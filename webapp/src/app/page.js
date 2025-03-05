@@ -14,7 +14,6 @@ export default async function CoursesPage() {
   catch (error) {
     console.error(error);
   }
-  console.log(courses);
   
   return (
     <div className="min-h-screen bg-white">

@@ -16,7 +16,6 @@ export default function ExamCreation() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Exam Created:", { title, date, room, duration });
     alert("Exam successfully created!");
   };
 

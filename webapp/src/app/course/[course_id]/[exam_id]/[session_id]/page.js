@@ -6,7 +6,6 @@ import { sessionService } from "@/api/services/sessionService";
 export default async function SessionPage({ params }) {
   const { course_id, exam_id, session_id } = await params;
   const session = await sessionService.getSession(course_id, exam_id, session_id);
-  console.log(session);  
   
   return (
     <div className="min-h-screen bg-white">

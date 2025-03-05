@@ -1,137 +1,277 @@
-"use client"; // Next.js requer isto para usar useState e eventos no lado do cliente.
+"use client"
 
-import { useState } from "react";
-import { Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import PopupButton from "@/components/ui/button-popup";
-import BackButton from "@/components/back-button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { useState } from "react"
+import { CalendarIcon, Upload } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { useParams, useRouter } from "next/navigation"
 
-export default function ExamCreation() {
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("05/11/2023");
-  const [room, setRoom] = useState("");
-  const [duration, setDuration] = useState("2:00");
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Calendar } from "@/components/ui/calendar"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import BackButton from "@/components/back-button"
+import { sessionService } from "@/api/services/sessionService"
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Exam Created:", { title, date, room, duration });
-    alert("Exam successfully created!");
-  };
+const formSchema = z.object({
+  title: z.string().min(2, {
+    message: "Title must be at least 2 characters.",
+  }),
+  date: z.date({
+    required_error: "A date is required.",
+  }),
+  room: z.string().min(1, {
+    message: "Room is required.",
+  }),
+  duration: z.string().min(1, {
+    message: "Duration is required.",
+  }),
+})
 
-// Fix form structure to make button work
+export default function CreateSessionForm() {
+    const [files, setFiles] = useState([])
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [error, setError] = useState(null)
+    
+    const params = useParams()
+    const router = useRouter()
+    const { course_id, exam_id } = params
+  
+    const handleDragOver = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    
+    const handleDrop = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        // Convert FileList to array and update state
+        const droppedFiles = Array.from(e.dataTransfer.files)
+        setFiles(prevFiles => [...prevFiles, ...droppedFiles])
+        e.dataTransfer.clearData()
+      }
+    }
 
-return (
-  <div className="min-h-screen bg-white">
-    {/* Main Content */}
-    <main className="mx-auto max-w-7xl p-8">
-      <form onSubmit={handleSubmit} className="grid gap-6">
-        <h1 className="text-2xl font-semibold">Create Exam Session</h1>
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          // Convert FileList to array and update state
+          const selectedFiles = Array.from(e.target.files)
+          setFiles(prevFiles => [...prevFiles, ...selectedFiles])
+        }
+      }
+
+    const form = useForm({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            title: "",
+            room: "",
+            duration: "02:00",
+        },
+    })
+  
+    async function onSubmit(values) {
+      try {
+        setIsSubmitting(true)
+        setError(null)
         
-        {/* Título */}
-        <div className="space-y-2">
-          <label htmlFor="title" className="text-sm font-medium">
-            Title
-          </label>
-          <Input
-            id="title"
-            placeholder="Session Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
+        const formattedDate = format(values.date, "yyyy-MM-dd")
+
+        const duration = `${values.duration}:00.000Z`
+        
+        const session = {
+          exam_id: Number(exam_id),
+          course_id: course_id,
+          name: values.title,
+          date: formattedDate,
+          duration: values.duration + ":00.000Z", // Format as expected by API
+          room: values.room,
+          exam_file: ""
+        }
+
+        try{
+          const sessionData = await sessionService.createSession(course_id, exam_id, session)
+          const session_id = sessionData.id
+
+        if (files.length > 0) {
+          for (const file of files) {
+            const formData = new FormData()
+            formData.append('exam_file', file)
+            
+             try {
+            await sessionService.uploadFile(course_id, exam_id, session_id, formData)
+          } catch (uploadError) {
+            throw new Error(`Failed to upload file: ${uploadError.message}`)
+          }
+        }
+      }
+        alert("Session created successfully!")
+        router.push(`/course/${course_id}/${exam_id}`)
+      } catch (apiError) {
+        throw new Error(`API error: ${apiError.message}`)
+      }
+      
+    } catch (err) {
+      setError(err.message || "An error occurred while creating the session")
+      console.error(err)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+  
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Create Session for Teste 1 Pratico in Fundamentos de Programação</h1>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="Session Title" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
 
-        {/* Data, Sala e Duração */}
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Data */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Date</label>
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="DD/MM/YYYY"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
-              <Button variant="ghost" size="icon" className="absolute right-0 top-0">
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                        >
+                          {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Sala */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Room</label>
-            <Select onValueChange={setRoom}>
-              <SelectTrigger>
-                <SelectValue placeholder="Room" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="anf-iv">Anf. IV</SelectItem>
-                <SelectItem value="anf-v">Anf. V</SelectItem>
-                <SelectItem value="23.01.05">23.01.05</SelectItem>
-                <SelectItem value="23.01.06">23.01.06</SelectItem>
-                <SelectItem value="23.01.07">23.01.07</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <FormField
+              control={form.control}
+              name="room"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Room</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Room Name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Duração */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Duration</label>
-            <Input
-              type="text"
-              placeholder="2:00"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              required
+            <FormField
+              control={form.control}
+              name="duration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Duration (hours:minutes)</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        max="10" 
+                        placeholder="Hours" 
+                        value={field.value.split(':')[0] || ""}
+                        onChange={(e) => {
+                          const hours = e.target.value;
+                          const minutes = field.value.split(':')[1] || "00";
+                          field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
+                        }}
+                        className="w-20"
+                      />
+                      <span>:</span>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        max="59" 
+                        placeholder="Minutes" 
+                        value={field.value.split(':')[1] || ""}
+                        onChange={(e) => {
+                          const hours = field.value.split(':')[0] || "00";
+                          const minutes = e.target.value;
+                          field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
+                        }}
+                        className="w-20"
+                      />
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        Total duration (e.g., 02:00 for 2 hours)
+                      </span>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
-        </div>
 
-        {/* Attach Files Section */}
-        <div className="mt-6 mb-8 border border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
-          <div className="flex flex-col items-center">
-            <Label htmlFor="exam_file" className="text-sm font-medium mb-3">
-              Attach Files
-            </Label>
-            <div className="w-full max-w-md">
-              <div className="flex flex-col items-center justify-center w-full">
-                <label htmlFor="exam_file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <svg className="w-8 h-8 mb-3 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                      <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                    </svg>
-                    <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                    <p className="text-xs text-gray-500">PDF, DOCX, or other document files</p>
-                  </div>
-                  <Input 
-                    id="exam_file" 
-                    type="file"
-                    className="hidden"
-                  />
-                </label>
+          <div
+            className="border border-dashed rounded-md p-10 text-center cursor-pointer"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <div className="flex flex-col items-center justify-center gap-2">
+              <Upload className="h-10 w-10 text-muted-foreground" />
+              <div className="flex flex-col items-center">
+                <p className="text-sm font-medium">Attach Files</p>
+                <p className="text-xs text-muted-foreground">Click to upload or drag and drop</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or other document files</p>
               </div>
+              <Input type="file" className="hidden" id="file-upload" multiple onChange={handleFileChange} />
+              <label
+                htmlFor="file-upload"
+                className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+              >
+                Select Files
+              </label>
             </div>
+            {files.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium">Selected Files:</p>
+                <ul className="text-sm text-muted-foreground mt-1">
+                  {files.map((file, index) => (
+                    <li key={index}>{file.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Buttons Section */}
-        <div className="mt-8 flex justify-between items-center">
-          {/* Back Button */}
-          <BackButton />
-
-          {/* Create Exam Button */}
-          <Button type="submit" variant="outline" className="bg-white text-black border border-black hover:bg-gray-100">
-            Create Session
-          </Button>
-        </div>
-      </form>
-    </main>
-  </div>
-);
+          <div className="flex justify-between">
+            <BackButton />
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Session"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
+  )
 }

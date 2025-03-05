@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
-import SessionCard from "@/components/editable-card"
+import TestCard from "@/components/editable-card"
 import { courseService } from "@/api/services/courseService"
 import { examService } from "@/api/services/examService"
 import { sessionService } from "@/api/services/sessionService"
@@ -25,12 +25,16 @@ if (!exam) {
         <h1 className="text-4xl font-bold mb-8">{exam.name}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sessions.map((session) => (
-              <SessionCard
+              <TestCard
                 key={session.id}
                 name={session.name}
                 description={session.date}
                 link={`/course/${course_id}/${exam_id}/${session.id}`}
                 edit_link={`/course/${course_id}/${exam.id}/${session.id}/edit_session`}
+                type = "session"
+                courseId={course_id} // Make sure this is defined and not null/undefined
+                examId={exam_id}
+                sessionId={session.id}
               />
             ))}
           </div>

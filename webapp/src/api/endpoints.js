@@ -9,17 +9,20 @@ export const ENDPOINTS = {
   COURSE: coursePath,
   COURSE_CREATE: `/course/create`, // * ADMIN SIDE
 
+
   // Exam endpoints
   EXAMS: (courseId) => `${coursePath(courseId)}/exams`,
   EXAM: examPath,
-  EXAM_CREATE: (courseId) => `${coursePath(courseId)}/exam/exam-create`,
+  EXAM_CREATE: (courseId) => `${coursePath(courseId)}/exam-create`,
+  EXAM_DELETE: (courseId, examId) => `${examPath(courseId, examId)}/delete`, 
 
   // Session endpoints
   SESSIONS: (courseId, examId) => `${examPath(courseId, examId)}/sessions`,
   SESSION: sessionPath,
-  SESSION_CREATE: (courseId, examId) => `${examPath(courseId, examId)}/session/session-create`,
+  SESSION_CREATE: (courseId, examId) => `${examPath(courseId, examId)}/session-create`,
   SESSION_UPLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/upload`,
   SESSION_DOWNLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/download`, // * STUDENT SIDE
   SESSION_SUBMISSIONS: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/submissions`,
   SESSION_SUBMISSIONS_DOWNLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/get-submissions`,
+  SESSION_DELETE: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}`, 
 };
