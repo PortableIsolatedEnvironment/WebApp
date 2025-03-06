@@ -12,7 +12,7 @@ import { sessionService } from "@/api/services/sessionService"
 export default async function ExamPage({ params }) {
   const { course_id, exam_id } = await params;
   const course = await courseService.getCoursebyID(course_id);
-  const exam = await examService.getExams(course_id, exam_id);
+  const exam = await examService.getExam(course_id, exam_id);
   const sessions = await sessionService.getSessions(course_id, exam_id);
 
 if (!exam) {
@@ -28,9 +28,9 @@ if (!exam) {
               <TestCard
                 key={session.id}
                 name={session.name}
-                description={session.date}
+                description={new Date(session.date).toLocaleDateString()}
                 link={`/course/${course_id}/${exam_id}/${session.id}`}
-                edit_link={`/course/${course_id}/${exam.id}/${session.id}/edit_session`}
+                edit_link={`/course/${course_id}/${exam_id}/${session.id}/edit_session`}
                 type = "session"
                 courseId={course_id} // Make sure this is defined and not null/undefined
                 examId={exam_id}

@@ -31,7 +31,7 @@ export default async function CoursePage({ params }) {
                 edit_link={`/course/${course.id}/${exam.id}/edit_exam`}
                 type = "exam"
                 courseId={course_id} // Make sure this is defined and not null/undefined
-                examId={exam_id}
+                examId={exam.id}
               />
             ))}
           </div>

@@ -1,5 +1,6 @@
 'use client'; 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Pencil, Router, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -7,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { fetchApi } from "@/api/client";
 import { ENDPOINTS } from "@/api/endpoints";
 import { sessionService } from "@/api/services/sessionService";
+import { examService } from "@/api/services/examService";
 
 export default function TestCard({ 
   name, 
@@ -18,9 +20,9 @@ export default function TestCard({
   examId = '',
   sessionId = '', // Only needed for session deletion
   onDeleteSuccess, // Callback after successful deletion
-}) {
+  })
+ {
   const router = useRouter();
-  // Sanitize type and provide verbose logging
   const validType = ['exam', 'session'].includes(type) ? type : 'exam';
   if (validType !== type) {
     console.error(`Invalid type prop "${type}" provided. Using "${validType}" instead.`);
@@ -34,14 +36,11 @@ export default function TestCard({
     
     console.log("Delete button clicked", { type: validType, courseId, examId, sessionId });
     
-    // Confirm deletion with user
-    const confirmMessage = `Are you sure you want to delete this ${validType}?`;
-    if (!window.confirm(confirmMessage)) {
-      console.log("User canceled deletion");
+    const confirmMessage = `Are you sure you want to delete this ${validType}?`; 
+    if (!window.confirm(confirmMessage)) { // *CHANGE FROM ALERT TO CONFIRM DIALOG
       return;
     }
     
-    // Validate required props before making the request
     if (!courseId) {
       console.error("Missing courseId - cannot delete");
       alert(`Cannot delete ${validType}: Missing course ID`);
@@ -63,43 +62,17 @@ export default function TestCard({
     setIsDeleting(true);
     
     try {
-      let response;
-      let success = false;
-      
       if (validType === 'exam') {
-        const endpoint = ENDPOINTS.EXAM_DELETE(courseId, examId);
-        console.log(`Attempting to delete ${validType} with endpoint:`, endpoint);
-        
-        // Make the delete request
-        response = await fetch(endpoint, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        // Check fetch response
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-        success = true;
+        console.log(`Attempting to delete ${validType} with courseId: ${courseId}, examId: ${examId}`);
+        await examService.deleteExam(courseId, examId);
       } else {
-        // For sessions, use the service directly
-        console.log(`Attempting to delete session with courseId: ${courseId}, examId: ${examId}, sessionId: ${sessionId}`);
-        try {
-          await sessionService.deleteSession(courseId, examId, sessionId);
-          success = true;
-        } catch (serviceError) {
-          throw new Error(`Service error: ${serviceError.message}`);
-        }
+        await sessionService.deleteSession(courseId, examId, sessionId);
       }
       
-      if (success) {
-        console.log(`${validType} deleted successfully`);
-        
-        if (onDeleteSuccess) {
-          onDeleteSuccess();
-        }
+      console.log(`${validType} deleted successfully`);// *ADD TOAST HERE
+      
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
       }
       router.refresh();
     } catch (error) {
@@ -115,7 +88,7 @@ export default function TestCard({
       <Link href={link} className="block cursor-pointer">
         <div>
           <h2 className="text-lg font-semibold text-white">{name}</h2>
-          <p className="mt-2 text-sm text-gray-400">{description || "No description available"}</p>
+          <p className="mt-2 text-sm text-gray-400">{description || ""}</p>
         </div>
       </Link>
 

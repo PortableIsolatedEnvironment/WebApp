@@ -81,15 +81,13 @@ export default function CreateSessionForm() {
         setError(null)
         
         const formattedDate = format(values.date, "yyyy-MM-dd")
-
-        const duration = `${values.duration}:00.000Z`
         
         const session = {
           exam_id: Number(exam_id),
           course_id: course_id,
           name: values.title,
           date: formattedDate,
-          duration: values.duration + ":00.000Z", // Format as expected by API
+          duration: values.duration + ":00",
           room: values.room,
           exam_file: ""
         }

@@ -1,19 +1,43 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 const BackButton = () => {
     const router = useRouter();
+    const pathname = usePathname();
 
     const handleBack = () => {
-        router.back();
+        const pathParts = pathname.split('/').filter(Boolean);
+        
+        if (pathParts.length <= 1) {
+            router.push('/');
+            return;
+        }
+        
+        if (pathParts[0] === 'course') {
+            if (pathParts.length === 2) {
+                router.push('/');
+            } else if (pathParts.length === 3) {
+                router.push(`/course/${pathParts[1]}`);
+            } else if (pathParts.length === 4) {
+                router.push(`/course/${pathParts[1]}/${pathParts[2]}`);
+            } else if (pathParts.length >= 5) {
+                if (pathParts[4] === 'edit_session' || pathParts[4] === 'create_session') {
+                    router.push(`/course/${pathParts[1]}/${pathParts[2]}`);
+                } else {
+                    router.push(pathname.split('/').slice(0, -1).join('/'));
+                }
+            }
+        } else {
+            router.push(pathname.split('/').slice(0, -1).join('/'));
+        }
     };
 
     return (
-        <Button onClick={handleBack}>
+        <Button type="button" onClick={handleBack}>
             Back
-        </ Button>
+        </Button>
     );
 };
 
