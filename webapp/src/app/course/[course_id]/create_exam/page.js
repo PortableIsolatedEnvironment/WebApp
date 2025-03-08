@@ -211,14 +211,14 @@ export default function CreateExamForm() {
                   control={form.control}
                   name="date"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
+                    <FormItem>
                       <FormLabel>Date</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant={"outline"}
-                              className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                              className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
                             >
                               {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -257,34 +257,39 @@ export default function CreateExamForm() {
                     <FormItem>
                       <FormLabel>Duration (hours:minutes)</FormLabel>
                       <FormControl>
-                        <div className="flex items-center gap-2">
-                          <Input 
-                            type="number" 
-                            min="0" 
-                            max="10" 
-                            placeholder="Hours" 
-                            value={field.value.split(':')[0] || ""}
-                            onChange={(e) => {
-                              const hours = e.target.value;
-                              const minutes = field.value.split(':')[1] || "00";
-                              field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
-                            }}
-                            className="w-20"
-                          />
-                          <span>:</span>
-                          <Input 
-                            type="number" 
-                            min="0" 
-                            max="59" 
-                            placeholder="Minutes" 
-                            value={field.value.split(':')[1] || ""}
-                            onChange={(e) => {
-                              const hours = field.value.split(':')[0] || "00";
-                              const minutes = e.target.value;
-                              field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
-                            }}
-                            className="w-20"
-                          />
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max="10" 
+                              placeholder="Hours" 
+                              value={field.value.split(':')[0] || ""}
+                              onChange={(e) => {
+                                const hours = e.target.value;
+                                const minutes = field.value.split(':')[1] || "00";
+                                field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
+                              }}
+                              className="w-20"
+                            />
+                            <span>:</span>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max="59" 
+                              placeholder="Minutes" 
+                              value={field.value.split(':')[1] || ""}
+                              onChange={(e) => {
+                                const hours = field.value.split(':')[0] || "00";
+                                const minutes = e.target.value;
+                                field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
+                              }}
+                              className="w-20"
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            Total duration(e.g. 02:00 for 2 hours)
+                          </span>
                         </div>
                       </FormControl>
                       <FormMessage />

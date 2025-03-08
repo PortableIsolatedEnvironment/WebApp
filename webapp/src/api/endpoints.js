@@ -22,5 +22,17 @@ export const ENDPOINTS = {
   SESSION_UPLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/upload`,
   SESSION_DOWNLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/download`, // * STUDENT SIDE
   SESSION_SUBMISSIONS: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/submissions`,
-  SESSION_SUBMISSIONS_DOWNLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/get-submissions`,
+  SESSION_SUBMISSIONS_DOWNLOAD: (courseId, examId, sessionId) =>  `/api/course/${courseId}/${examId}/${sessionId}/get-submissions`,
+
+  // User endpoints
+  USERS: "/users",
+  USER: (userId) => `/users/${userId}`,
+  USER_CREATE: "/users/create", // * ADMIN SIDE
+  USER_LOGIN: "/users/login",
+  USER_LOGOUT: "/users/logout",
+
+  // SESSION USER ENDPOINTS
+  SESSION_USERS: "/session-users", // * ADMIN SIDE (GET ALL)
+  SESSION_USER: (sessionUserId) => `/session-users/${sessionUserId}`,
+  SESSION_USER_CREATE: "/session-users/create", // * STUDENT SIDE
 };

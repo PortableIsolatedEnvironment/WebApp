@@ -9,7 +9,6 @@ export const sessionService = {
     getSession : async (courseId, examId, sessionId) => {
         return fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId));
     },
-
     createSession : async (courseId, examId, session) => {
         return fetchApi(ENDPOINTS.SESSION_CREATE(courseId, examId), {
             method: "POST",
@@ -41,4 +40,45 @@ export const sessionService = {
             }
         });
     },
+    getSessionUsers: async (sessionId) => {
+        return fetchApi(ENDPOINTS.SESSION_USER(sessionId));
+    },
+    downloadSubmissions: async (courseId, examId, sessionId) => {
+        const endpoint = ENDPOINTS.SESSION_SUBMISSIONS_DOWNLOAD(courseId, examId, sessionId);
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: "GET",
+                headers: { "Accept": "application/zip" },
+                credentials: "include"
+            });
+    
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+    
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/zip")) {
+                throw new Error(`Unexpected content type: ${contentType}`);
+            }
+    
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `submissions-${sessionId}.zip`;
+    
+            document.body.appendChild(a);
+            a.click();
+    
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+    
+            return true;
+        } catch (error) {
+            console.error("Error downloading submissions:", error);
+            throw error;
+        }
+    }
 };
