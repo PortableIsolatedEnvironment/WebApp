@@ -7,6 +7,7 @@ import BackButton from "@/components/back-button";
 import { sessionService } from "@/api/services/sessionService";
 import { userService } from "@/api/services/userService";
 import { notFound, useParams, useRouter } from "next/navigation";
+import { toast, Toaster } from "sonner";
 
 
 export default function SessionClientPage() {
@@ -119,12 +120,38 @@ export default function SessionClientPage() {
     router.push(notFound());
   }
 
-  const handleSendBroadcast = () => {
-    // TODO: Implement send broadcast message functionality
-    console.log("Sending broadcast:", broadcastMessage);
-  //* Add implementation here
-  //* toast.success("Broadcast sent successfully");
-  };
+  const handleSendBroadcast = async () => {
+    try {
+      if (!broadcastMessage.trim()) {
+        toast.error("Please enter a message to broadcast");
+        return;
+      }
+      
+    // Disable button during submission
+    const sendButton = document.querySelector('button[class*="bg-[#5BA87A]"]');
+    if (sendButton) sendButton.disabled = true;
+    
+    // Show loading toast
+    const toastId = toast.loading("Sending broadcast...");
+    
+    // Call the API to send the broadcast
+    await sessionService.sendBroadcast(session_id, broadcastMessage);
+    
+    // Dismiss loading toast and show success
+    toast.dismiss(toastId);
+    toast.success("Broadcast sent successfully");
+    
+    // Clear the input field after successful broadcast
+    setBroadcastMessage("");
+  } catch (error) {
+    console.error("Error sending broadcast:", error);
+    toast.error(`Failed to send broadcast: ${error.message || "Unknown error"}`);
+  } finally {
+    // Re-enable button
+    const sendButton = document.querySelector('button[class*="bg-[#5BA87A]"]');
+    if (sendButton) sendButton.disabled = false;
+  }
+};
 
   const handleClearBroadcast = () => {
     setBroadcastMessage("");
@@ -253,6 +280,7 @@ export default function SessionClientPage() {
           </Button>
         </div>
       </main>
+      <Toaster />
     </div>
   );
 }

@@ -80,5 +80,25 @@ export const sessionService = {
             console.error("Error downloading submissions:", error);
             throw error;
         }
-    }
+    },
+    
+    sendBroadcast: async (sessionId, message) => {
+        try {
+          const response = await fetchApi(`/pie/${sessionId}`, {
+            method: "POST",
+            body: JSON.stringify({
+              operation: "create",
+              message: message
+            }),
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+          return response;
+        } catch (error) {
+          console.error("API Error: Send broadcast message failed", error);
+          throw error;
+        }
+      }
+
 };
