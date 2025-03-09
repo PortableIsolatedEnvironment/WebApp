@@ -1,19 +1,98 @@
 'use client'; 
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Pencil, Router, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { fetchApi } from "@/api/client";
+import { ENDPOINTS } from "@/api/endpoints";
+import { sessionService } from "@/api/services/sessionService";
+import { examService } from "@/api/services/examService";
 
-export default function TestCard({ name, description, link, edit_link,}) {
+export default function TestCard({ 
+  name, 
+  description, 
+  link, 
+  edit_link, 
+  type = 'exam', // 'exam' or 'session'
+  courseId = '',
+  examId = '',
+  sessionId = '', // Only needed for session deletion
+  onDeleteSuccess, // Callback after successful deletion
+  })
+ {
+  const router = useRouter();
+  const validType = ['exam', 'session'].includes(type) ? type : 'exam';
+  if (validType !== type) {
+    console.error(`Invalid type prop "${type}" provided. Using "${validType}" instead.`);
+  }
+  
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("Delete button clicked", { type: validType, courseId, examId, sessionId });
+    
+    const confirmMessage = `Are you sure you want to delete this ${validType}?`; 
+    if (!window.confirm(confirmMessage)) { // *CHANGE FROM ALERT TO CONFIRM DIALOG
+      return;
+    }
+    
+    if (!courseId) {
+      console.error("Missing courseId - cannot delete");
+      alert(`Cannot delete ${validType}: Missing course ID`);
+      return;
+    }
+    
+    if (!examId) {
+      console.error("Missing examId - cannot delete");
+      alert(`Cannot delete ${validType}: Missing exam ID`);
+      return;
+    }
+    
+    if (validType === 'session' && !sessionId) {
+      console.error("Missing sessionId - cannot delete session");
+      alert("Cannot delete session: Missing session ID");
+      return;
+    }
+    
+    setIsDeleting(true);
+    
+    try {
+      if (validType === 'exam') {
+        console.log(`Attempting to delete ${validType} with courseId: ${courseId}, examId: ${examId}`);
+        await examService.deleteExam(courseId, examId);
+      } else {
+        await sessionService.deleteSession(courseId, examId, sessionId);
+      }
+      
+      console.log(`${validType} deleted successfully`);// *ADD TOAST HERE
+      
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+      router.refresh();
+    } catch (error) {
+      console.error(`Error deleting ${validType}:`, error);
+      alert(`Failed to delete ${validType}. Please try again. (${error.message})`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="group relative rounded-lg border bg-[#1C1C1C] p-6 hover:bg-[#242424] transition-colors">
       <Link href={link} className="block cursor-pointer">
         <div>
           <h2 className="text-lg font-semibold text-white">{name}</h2>
-          <p className="mt-2 text-sm text-gray-400">{description}</p>
+          <p className="mt-2 text-sm text-gray-400">{description || ""}</p>
         </div>
       </Link>
 
-      {/* Botão de Editar */}
+      {/* Edit Button */}
       <Link href={edit_link} >
         <Button
           variant="ghost"
@@ -24,15 +103,15 @@ export default function TestCard({ name, description, link, edit_link,}) {
         </Button>
       </Link>
 
-      {/* Botão de Apagar */}
+      {/* Delete Button */}
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-4 right-4 text-white opacity-60 hover:opacity-100"
-        onClick={() => {
-          alert("Exam Deleted (TO BE IMPLEMENTED)");
-        }}>
+        onClick={handleDelete}
+        disabled={isDeleting}
+        className="absolute top-4 right-4 text-white opacity-60 hover:opacity-100">    
         <Trash2 className="h-4 w-4" />
+        {isDeleting && <span className="sr-only">Deleting...</span>}
       </Button>
     </div>
   );

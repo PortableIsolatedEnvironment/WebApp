@@ -1,5 +1,6 @@
 import { Roboto, Roboto_Mono } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/navbar";
 
 const geistSans = Roboto({
   variable: "--font-roboto",
@@ -21,11 +22,15 @@ export const metadata = {
   // description:
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }) {  
+  // const[searchQuery, setSearchQuery] = useState("");
   return (
     <html lang="en">
       <body>
+        <Navbar />
+        <main className="container mx-auto px-4">
         {children}
+        </main>
       </body>
     </html>
   );

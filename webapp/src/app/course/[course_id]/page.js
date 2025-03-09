@@ -1,21 +1,18 @@
 
 import { notFound } from "next/navigation";
-import Navbar from "@/components/navbar";
 import Link from "next/link";
 import { Plus} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BackButton from "@/components/back-button";
-import ExamCard from "@/components/editable-card";
-import CourseData from "@/data/courses.json";
+import TestCard from "@/components/editable-card";
+import { courseService } from "@/api/services/courseService";
+import { examService } from "@/api/services/examService";
 
-async function getCourseData(course_id) {
-  const course = CourseData.find((course) => course.id == course_id);
-  return course;
-}
 
 export default async function CoursePage({ params }) {
   const { course_id } = await params;
-  const course = await getCourseData(course_id);
+  const course = await courseService.getCoursebyID(course_id);
+  const exams = await examService.getExams(course_id);
 
   if (!course) {
     return notFound(); // Show 404 if course doesn't exist
@@ -23,17 +20,18 @@ export default async function CoursePage({ params }) {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">{course.name}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {course.exams.map((exam) => (
-              <ExamCard
+            {exams.map((exam) => (
+              <TestCard
                 key={exam.id}
                 name={exam.name}
-                // description={exam.description} // This line is commented out because the description is not present in the JSON file
                 link={`/course/${course.id}/${exam.id}`}
                 edit_link={`/course/${course.id}/${exam.id}/edit_exam`}
+                type = "exam"
+                courseId={course_id} // Make sure this is defined and not null/undefined
+                examId={exam.id}
               />
             ))}
           </div>

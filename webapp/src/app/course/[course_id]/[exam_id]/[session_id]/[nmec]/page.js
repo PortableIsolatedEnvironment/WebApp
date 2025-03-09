@@ -1,14 +1,11 @@
 import { Button } from "@/components/ui/button";
 import BackButton from "@/components/back-button";
-import Navbar from "@/components/navbar";
 
 
 
 export default async function MonitoringPage({params}){
       return (
         <div className="min-h-screen bg-white">
-          <Navbar />
-
           {/* Main Content */}
           <main className="p-8">
             {/* Student Info */}
