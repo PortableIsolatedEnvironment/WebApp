@@ -2,85 +2,285 @@ import { fetchApi } from "@/api/client";
 import { ENDPOINTS  } from "@/api/endpoints";
 
 export const sessionService = {
-    getSessions : async (courseId, examId) => {
-        return fetchApi(ENDPOINTS.SESSIONS(courseId, examId));
+    getSessions: async (courseId, examId) => {
+      try {
+        const response = await fetchApi(ENDPOINTS.SESSIONS(courseId, examId));
+        return response || [];
+      } catch (error) {
+        console.error("Failed to fetch sessions:", error);
+        throw new Error("Unable to retrieve sessions. Please try again later.");
+      }
+    },
+  
+    getSession: async (courseId, examId, sessionId) => {
+      try {
+        const response = await fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId));
+        if (!response) {
+          throw new Error("Session not found");
+        }
+        return response;
+      } catch (error) {
+        console.error(`Failed to fetch session ${sessionId}:`, error);
+        throw error.message === "Session not found" 
+          ? error
+          : new Error("Unable to retrieve session details. Please try again later.");
+      }
+    },
+  
+    createSession: async (courseId, examId, session) => {
+      try {
+        if (!session.name || !session.date || !session.room) {
+          throw new Error("Missing required session information");
+        }
+  
+        const response = await fetchApi(ENDPOINTS.SESSION_CREATE(courseId, examId), {
+          method: "POST",
+          body: JSON.stringify(session),
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          }
+        });
+        return response;
+      } catch (error) {
+        console.error("Failed to create session:", error);
+        throw error.message === "Missing required session information"
+          ? error
+          : new Error("Unable to create session. Please check your input and try again.");
+      }
+    },
+  
+    uploadFile: async (courseId, examId, sessionId, formData) => {
+      try {
+        // Client-side validation of files
+        const files = formData.getAll('files');
+        const examLink = formData.get('exam_link');
+        
+        // Mutual exclusivity check (same as server)
+        if (files.some(f => f.name) && examLink && examLink !== 'string' && examLink.trim()) {
+          throw new Error("Cannot provide both files and an exam link. Choose one method only.");
+        }
+  
+        if (examLink && examLink !== 'string' && examLink.trim()) {
+          if (!examLink.startsWith('http://') && !examLink.startsWith('https://')) {
+            throw new Error("Exam link must be a valid URL starting with http:// or https://");
+          }
+        } else if (files.length > 0) {
+          for (const file of files) {
+            if (file.name) {
+              validateFile(file);
+            }
+          }
+        } else {
+          throw new Error("Either files or a valid exam link must be provided");
+        }
+  
+        const response = await fetchApi(ENDPOINTS.SESSION_UPLOAD(courseId, examId, sessionId), {
+          method: "POST",
+          body: formData,
+        });
+        return response;
+      } catch (error) {
+        console.error("Failed to upload files:", error);
+        throw error;
+      }
+    },
+  
+    deleteSession: async (courseId, examId, sessionId) => {
+      try {
+        if (!window.confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
+          return false;
+        }
+        
+        const response = await fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId), {
+          method: "DELETE",
+        });
+        return response;
+      } catch (error) {
+        console.error(`Failed to delete session ${sessionId}:`, error);
+        throw new Error("Unable to delete the session. Please try again later.");
+      }
+    },
+  
+    updateSession: async (courseId, examId, sessionId, session) => {
+      try {
+        if (!session.name || !session.date || !session.room) {
+          throw new Error("Missing required session information");
+        }
+  
+        const response = await fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId), {
+          method: "PUT",
+          body: JSON.stringify(session),
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          }
+        });
+        return response;
+      } catch (error) {
+        console.error(`Failed to update session ${sessionId}:`, error);
+        throw error.message === "Missing required session information"
+          ? error
+          : new Error("Unable to update session. Please check your input and try again.");
+      }
+    },
+    
+    updateSessionWithFiles: async (courseId, examId, sessionId, formData) => {
+      try {
+        const files = formData.getAll('files');
+        const examLink = formData.get('exam_link');
+        
+        if (files.some(f => f.name) && examLink && examLink !== 'string' && examLink.trim()) {
+          throw new Error("Cannot provide both files and an exam link. Choose one method only.");
+        }
+
+        if (examLink && examLink !== 'string' && examLink.trim()) {
+          if (!examLink.startsWith('http://') && !examLink.startsWith('https://')) {
+            throw new Error("Exam link must be a valid URL starting with http:// or https://");
+          }
+        } else if (files.length > 0) {
+          for (const file of files) {
+            if (file.name) {
+              validateFile(file);
+            }
+          }
+        }
+  
+        const response = await fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId), {
+          method: "PUT",
+          body: formData,
+        });
+        return response;
+      } catch (error) {
+        console.error(`Failed to update session ${sessionId} with files:`, error);
+        throw error;
+      }
+    },
+  
+    getSessionUsers: async (sessionId) => {
+      try {
+        const response = await fetchApi(ENDPOINTS.SESSION_USER(sessionId));
+        return response || [];
+      } catch (error) {
+        console.error(`Failed to fetch users for session ${sessionId}:`, error);
+        throw new Error("Unable to retrieve session users. Please try again later.");
+      }
+    },
+  
+    startSession: async (courseId, examId, sessionId) => {
+      try {
+        if (!window.confirm("Are you sure you want to start this exam session? This action cannot be undone.")) {
+          return false;
+        }
+        
+        const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/start`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        });
+        
+        return response;
+      } catch (error) {
+        if (error.message.includes("already started")) {
+          throw new Error("This session has already been started.");
+        }
+        console.error(`Failed to start session ${sessionId}:`, error);
+        throw new Error("Unable to start the session. Please try again later.");
+      }
     },
 
-    getSession : async (courseId, examId, sessionId) => {
-        return fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId));
-    },
-    createSession : async (courseId, examId, session) => {
-        return fetchApi(ENDPOINTS.SESSION_CREATE(courseId, examId), {
-            method: "POST",
-            body: JSON.stringify(session),
-            headers: {
-                "Content-Type": "application/json",
-                accept: "application/json"
-            }
-        });
-    },
-    uploadFile: async (courseId, examId, sessionId, formData) => {
-        return fetchApi(ENDPOINTS.SESSION_UPLOAD(courseId, examId, sessionId), {
-            method: "POST",
-            body: formData,
-        });
-    },
-    deleteSession: async (courseId, examId, sessionId) => {
-        return fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId), {
-            method: "DELETE",
-        });
-    },
-    updateSession: async (courseId, examId, sessionId, session) => {
-        return fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId), {
-            method: "PUT",
-            body: JSON.stringify(session),
-            headers: {
-                "Content-Type": "application/json",
-                accept: "application/json"
-            }
-        });
-    },
-    getSessionUsers: async (sessionId) => {
-        return fetchApi(ENDPOINTS.SESSION_USER(sessionId));
-    },
-    downloadSubmissions: async (courseId, examId, sessionId) => {
-        const endpoint = ENDPOINTS.SESSION_SUBMISSIONS_DOWNLOAD(courseId, examId, sessionId);
-        
+    endSession: async (courseId, examId, sessionId) => {
         try {
-            const response = await fetch(endpoint, {
-                method: "GET",
-                headers: { "Accept": "application/zip" },
-                credentials: "include"
-            });
-    
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+          if (!window.confirm("Are you sure you want to end this exam session? All students will lose access to the exam.")) {
+            return false;
+          }
+          
+          const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/end`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             }
-    
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/zip")) {
-                throw new Error(`Unexpected content type: ${contentType}`);
+          });
+          
+          return response;
+        } catch (error) {
+          if (error.message.includes("already ended")) {
+            throw new Error("This session has already been ended.");
+          }
+          console.error(`Failed to end session ${sessionId}:`, error);
+          throw new Error("Unable to end the session. Please try again later.");
+        }
+      },
+  
+    downloadSubmissions: async (courseId, examId, sessionId) => {
+        try {
+          // Use the rewritten URL path (this will go through Next.js)
+          const endpoint = ENDPOINTS.SESSION_SUBMISSIONS_DOWNLOAD(courseId, examId, sessionId);
+          
+          console.log("Download endpoint path:", endpoint);
+          
+          // Use relative URL here so it's requested from the same origin
+          // This allows Next.js to handle the rewrite
+          const response = await fetch(endpoint, {
+            method: "GET",
+            headers: { 
+              "Accept": "application/zip",
+            },
+            credentials: "include"
+          });
+      
+          if (!response.ok) {
+            // Handle specific error codes
+            if (response.status === 404) {
+              throw new Error("No submissions found for this session");
+            } else if (response.status === 403) {
+              throw new Error("You don't have permission to download these submissions");
             }
-    
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `submissions-${sessionId}.zip`;
-    
-            document.body.appendChild(a);
-            a.click();
-    
-            // Cleanup
+            throw new Error(`API error: ${response.status}`);
+          }
+      
+          // Rest of your function remains the same
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/zip")) {
+            throw new Error(`Unexpected content type: ${contentType}. Expected a zip archive.`);
+          }
+          
+          const disposition = response.headers.get('content-disposition');
+          let filename = `submissions-${sessionId}-${new Date().toISOString().slice(0,10)}.zip`;
+          
+          if (disposition && disposition.includes('filename=')) {
+            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+            const matches = filenameRegex.exec(disposition);
+            if (matches && matches[1]) {
+              filename = matches[1].replace(/['"]/g, '');
+            }
+          }
+      
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(
+            new Blob([blob], { type: 'application/zip' })
+          );
+          
+          const a = document.createElement("a");
+          a.style.display = 'none';
+          a.href = url;
+          a.download = filename;
+      
+          document.body.appendChild(a);
+          a.click();
+          
+          setTimeout(() => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-    
-            return true;
+          }, 100);
+      
+          return true;
         } catch (error) {
-            console.error("Error downloading submissions:", error);
-            throw error;
+          console.error("Error downloading submissions:", error);
+          throw error;
         }
-    },
+      },
     
     sendBroadcast: async (sessionId, message) => {
         try {
@@ -102,3 +302,31 @@ export const sessionService = {
       }
 
 };
+
+
+
+const validateFile = (file) => {
+    // Only check basic file type - the server will do comprehensive validation
+    const allowedTypes = [
+
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'image/png',
+      'image/jpeg',
+      'application/zip',
+      'application/octet-stream'
+    ];
+    
+    if (!allowedTypes.includes(file.type) && file.type !== '') {
+      throw new Error(`File ${file.name} is not an allowed type. Please select a document, image, or archive file.`);
+    }
+    
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
+    }
+    
+    return true;
+  };

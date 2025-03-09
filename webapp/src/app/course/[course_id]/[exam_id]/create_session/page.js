@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CalendarIcon, Upload } from "lucide-react"
+import { CalendarIcon, Upload, Link, AlertCircle } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -16,6 +16,9 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import BackButton from "@/components/back-button"
 import { sessionService } from "@/api/services/sessionService"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert } from "@/components/ui/alert"
+import { toast } from "sonner"
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -30,12 +33,19 @@ const formSchema = z.object({
   duration: z.string().min(1, {
     message: "Duration is required.",
   }),
+  examLink: z
+    .string()
+    .url("Please enter a valid URL starting with http:// or https://")
+    .optional()
+    .or(z.literal("")),
 })
 
 export default function CreateSessionForm() {
     const [files, setFiles] = useState([])
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState(null)
+    const [activeTab, setActiveTab] = useState("files")
+    const [formError, setFormError] = useState("")
     
     const params = useParams()
     const router = useRouter()
@@ -59,12 +69,16 @@ export default function CreateSessionForm() {
     }
 
     const handleFileChange = (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-          // Convert FileList to array and update state
-          const selectedFiles = Array.from(e.target.files)
-          setFiles(prevFiles => [...prevFiles, ...selectedFiles])
-        }
+      if (e.target.files && e.target.files.length > 0) {
+        // Convert FileList to array and update state
+        const selectedFiles = Array.from(e.target.files)
+        setFiles(prevFiles => [...prevFiles, ...selectedFiles])
       }
+    }
+    
+    const handleRemoveFile = (indexToRemove) => {
+      setFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove))
+    }
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -72,6 +86,7 @@ export default function CreateSessionForm() {
             title: "",
             room: "",
             duration: "02:00",
+            examLink: "",
         },
     })
   
@@ -79,195 +94,276 @@ export default function CreateSessionForm() {
       try {
         setIsSubmitting(true)
         setError(null)
+        setFormError("")
         
         const formattedDate = format(values.date, "yyyy-MM-dd")
         
-        const session = {
+        // Validate that either files OR link is provided, but not both
+        const hasFiles = files.length > 0
+        const hasLink = values.examLink && values.examLink.trim() !== ""
+        
+        if (hasFiles && hasLink) {
+          setFormError("You cannot provide both files and an exam link. Please choose one option.")
+          return
+        }
+        
+        if (!hasFiles && !hasLink) {
+          setFormError("Please provide either exam files or an external link.")
+          return
+        }
+        
+        // Basic session data (without files or link)
+        const sessionData = {
           exam_id: Number(exam_id),
           course_id: course_id,
           name: values.title,
           date: formattedDate,
           duration: values.duration + ":00",
           room: values.room,
-          exam_file: ""
         }
 
-        try{
-          const sessionData = await sessionService.createSession(course_id, exam_id, session)
-          const session_id = sessionData.id
-
-        if (files.length > 0) {
-          for (const file of files) {
+        try {
+          // First create the session
+          const sessionResponse = await sessionService.createSession(course_id, exam_id, sessionData)
+          const session_id = sessionResponse.id
+          
+          // Then upload either files or link
+          if (hasFiles) {
+            // For file uploads
             const formData = new FormData()
-            formData.append('exam_file', file)
             
-             try {
+            // Add each file
+            for (const file of files) {
+              formData.append('files', file)
+            }
+            
             await sessionService.uploadFile(course_id, exam_id, session_id, formData)
-          } catch (uploadError) {
-            throw new Error(`Failed to upload file: ${uploadError.message}`)
+          } else if (hasLink) {
+            // For exam link
+            const formData = new FormData()
+            formData.append('exam_link', values.examLink)
+            
+            await sessionService.uploadFile(course_id, exam_id, session_id, formData)
           }
+          
+          toast.success("Session created successfully!")
+          router.push(`/course/${course_id}/${exam_id}`)
+        } catch (apiError) {
+          throw new Error(`API error: ${apiError.message}`)
         }
+        
+      } catch (err) {
+        setError(err.message || "An error occurred while creating the session")
+        toast.error(err.message || "An error occurred while creating the session")
+        console.error(err)
+      } finally {
+        setIsSubmitting(false)
       }
-        alert("Session created successfully!")
-        router.push(`/course/${course_id}/${exam_id}`)
-      } catch (apiError) {
-        throw new Error(`API error: ${apiError.message}`)
-      }
-      
-    } catch (err) {
-      setError(err.message || "An error occurred while creating the session")
-      console.error(err)
-    } finally {
-      setIsSubmitting(false)
     }
-  }
   
-  return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Create Session for Teste 1 Pratico in Fundamentos de Programação</h1>
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-6">Create Session for Teste 1 Pratico in Fundamentos de Programação</h1>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title</FormLabel>
-                <FormControl>
-                  <Input placeholder="Session Title" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {formError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <span>{formError}</span>
+          </Alert>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="date"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                  variant={"outline"}
-                  className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")} >
-                          {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="room"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Room</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Room Name" {...field} />
+                    <Input placeholder="Session Title" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="duration"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duration</FormLabel>
-                  <FormControl>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          max="10" 
-                          placeholder="Hours" 
-                          value={field.value.split(':')[0] || ""}
-                          onChange={(e) => {
-                            const hours = e.target.value;
-                            const minutes = field.value.split(':')[1] || "00";
-                            field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
-                          }}
-                          className="w-20"
-                        />
-                        <span>:</span>
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          max="59" 
-                          placeholder="Minutes" 
-                          value={field.value.split(':')[1] || ""}
-                          onChange={(e) => {
-                            const hours = field.value.split(':')[0] || "00";
-                            const minutes = e.target.value;
-                            field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
-                          }}
-                          className="w-20"
-                        />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                    variant={"outline"}
+                    className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")} >
+                            {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="room"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Room</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Room Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="duration"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Duration</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            max="10" 
+                            placeholder="Hours" 
+                            value={field.value.split(':')[0] || ""}
+                            onChange={(e) => {
+                              const hours = e.target.value;
+                              const minutes = field.value.split(':')[1] || "00";
+                              field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
+                            }}
+                            className="w-20"
+                          />
+                          <span>:</span>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            max="59" 
+                            placeholder="Minutes" 
+                            value={field.value.split(':')[1] || ""}
+                            onChange={(e) => {
+                              const hours = field.value.split(':')[0] || "00";
+                              const minutes = e.target.value;
+                              field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Total duration (e.g., 02:00 for 2 hours)
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        Total duration (e.g., 02:00 for 2 hours)
-                      </span>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div
-            className="border border-dashed rounded-md p-10 text-center cursor-pointer"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            <div className="flex flex-col items-center justify-center gap-2">
-              <Upload className="h-10 w-10 text-muted-foreground" />
-              <div className="flex flex-col items-center">
-                <p className="text-sm font-medium">Attach Files</p>
-                <p className="text-xs text-muted-foreground">Click to upload or drag and drop</p>
-                <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or other document files</p>
-              </div>
-              <Input type="file" className="hidden" id="file-upload" multiple onChange={handleFileChange} />
-              <label
-                htmlFor="file-upload"
-                className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
-              >
-                Select Files
-              </label>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            {files.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium">Selected Files:</p>
-                <ul className="text-sm text-muted-foreground mt-1">
-                  {files.map((file, index) => (
-                    <li key={index}>{file.name}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
 
-          <div className="flex justify-between">
-            <BackButton />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Session"}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
-  )
+            <div className="border rounded-md p-4">
+              <h3 className="font-medium mb-4">Exam Materials</h3>
+              
+              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="files">Upload Files</TabsTrigger>
+                  <TabsTrigger value="link">Use External Link</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="files" className="mt-0">
+                  <div
+                    className="border border-dashed rounded-md p-10 text-center cursor-pointer"
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Upload className="h-10 w-10 text-muted-foreground" />
+                      <div className="flex flex-col items-center">
+                        <p className="text-sm font-medium">Attach Files</p>
+                        <p className="text-xs text-muted-foreground">Click to upload or drag and drop</p>
+                        <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or other document files</p>
+                      </div>
+                      <Input type="file" className="hidden" id="file-upload" multiple onChange={handleFileChange} />
+                      <label
+                        htmlFor="file-upload"
+                        className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                      >
+                        Select Files
+                      </label>
+                    </div>
+                    {files.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium">Selected Files:</p>
+                        <ul className="text-sm text-muted-foreground mt-1">
+                          {files.map((file, index) => (
+                            <li key={index} className="flex justify-between items-center">
+                              <span>{file.name}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleRemoveFile(index)}
+                                className="h-8 w-8 p-0"
+                              >
+                                ×
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="link" className="mt-0">
+                  <FormField
+                    control={form.control}
+                    name="examLink"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>External Exam Link</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center">
+                            <Link className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                              placeholder="https://example.com/exam" 
+                              {...field}
+                              className="flex-1"
+                            />
+                          </div>
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter a valid URL starting with http:// or https://
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            <div className="flex justify-between">
+              <BackButton />
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Session"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+    )
 }

@@ -21,6 +21,9 @@ export const ENDPOINTS = {
   SESSION_CREATE: (courseId, examId) => `${examPath(courseId, examId)}/session-create`,
   SESSION_UPLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/upload`,
   SESSION_DOWNLOAD: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/download`, // * STUDENT SIDE
+  SESSION_START: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/start`,
+  SESSION_STOP: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/stop`,
+  SESSION_GET_KEY: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/key`, // * STUDENT SIDE 
   SESSION_SUBMISSIONS: (courseId, examId, sessionId) => `${sessionPath(courseId, examId, sessionId)}/submissions`,
   SESSION_SUBMISSIONS_DOWNLOAD: (courseId, examId, sessionId) =>  `/api/course/${courseId}/${examId}/${sessionId}/get-submissions`,
 
