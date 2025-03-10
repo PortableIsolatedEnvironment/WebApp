@@ -118,7 +118,8 @@ export default function CreateSessionForm() {
           course_id: course_id,
           name: values.title,
           date: formattedDate,
-          duration: values.duration + ":00",
+          //transform duration to seconds (int)
+          duration: values.duration.split(':').reduce((acc, time) => 60 * acc + +time, 0),
           room: values.room,
         }
 

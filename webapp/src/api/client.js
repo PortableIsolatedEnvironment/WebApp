@@ -23,7 +23,8 @@ export async function fetchApi(endpoint, options = {}) {
     // Perform the fetch with timeout
     const response = await fetch(url, {
       headers,
-      credentials: 'include', // Always include credentials for authenticated requests
+      mode: 'cors', 
+      // credentials: 'include', // Always include credentials for authenticated requests
       signal: controller.signal,
       ...options,
     });
