@@ -8,7 +8,7 @@ import { sessionService } from "@/api/services/sessionService";
 import { userService } from "@/api/services/userService";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
-
+import { Plus } from "lucide-react";
 
 export default function SessionClientPage() {
   const [session, setSession] = useState(null);
@@ -16,6 +16,7 @@ export default function SessionClientPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [extensionMinutes, setExtensionMinutes] = useState({});
   const params = useParams();
   const router = useRouter();
   const { course_id, exam_id, session_id } = params;
@@ -118,40 +119,72 @@ export default function SessionClientPage() {
 
   if (!session) {
     router.push(notFound());
+    return null; // Add this return to prevent rendering after redirect
   }
 
-  const handleSendBroadcast = async () => {
+  const handleSendBroadcastStart = async () => {
+    try {
+      await sessionService.startSession(course_id, exam_id, session_id);
+
+      setSession(prevSession => ({
+        ...prevSession,
+        is_started: true
+      }));
+
+      toast.success("Broadcast started successfully");
+    } catch (error) {
+      toast.error(`Failed to start broadcast: ${error.message || "Unknown error"}`);
+    }
+  };
+
+  const handleSendBroadcastEnd = async () => {
+    try {
+      await sessionService.endSession(course_id, exam_id, session_id);
+      toast.success("Broadcast ended successfully");
+    } catch (error) {
+      toast.error(`Failed to end broadcast: ${error.message || "Unknown error"}`);
+    }
+  };
+
+  const handleSendBroadcastMessage = async () => {
     try {
       if (!broadcastMessage.trim()) {
         toast.error("Please enter a message to broadcast");
         return;
       }
       
-    // Disable button during submission
-    const sendButton = document.querySelector('button[class*="bg-[#5BA87A]"]');
-    if (sendButton) sendButton.disabled = true;
-    
-    // Show loading toast
-    const toastId = toast.loading("Sending broadcast...");
-    
-    // Call the API to send the broadcast
-    await sessionService.sendBroadcast(session_id, broadcastMessage);
-    
-    // Dismiss loading toast and show success
-    toast.dismiss(toastId);
-    toast.success("Broadcast sent successfully");
-    
-    // Clear the input field after successful broadcast
-    setBroadcastMessage("");
-  } catch (error) {
-    console.error("Error sending broadcast:", error);
-    toast.error(`Failed to send broadcast: ${error.message || "Unknown error"}`);
-  } finally {
-    // Re-enable button
-    const sendButton = document.querySelector('button[class*="bg-[#5BA87A]"]');
-    if (sendButton) sendButton.disabled = false;
-  }
-};
+      // Disable button during submission
+      const sendButton = document.getElementById('send-button');
+      if (sendButton) sendButton.disabled = true;
+      
+      // Show loading toast
+      const toastId = toast.loading("Sending broadcast...");
+      
+      const messagePromises = sessionUsers.map(user => 
+        sessionService.sendBroadcastMessage(
+          user.user_nmec,
+          broadcastMessage,
+          course_id,
+          exam_id,
+          session_id
+        )
+      );
+      
+      await Promise.all(messagePromises);
+
+      // Dismiss loading toast and show success
+      toast.dismiss(toastId);
+      toast.success("Broadcast sent successfully");
+      
+      // Clear the input field after successful broadcast
+      setBroadcastMessage("");
+    } catch (error) {
+      toast.error(`Failed to send broadcast: ${error.message || "Unknown error"}`);
+    } finally {
+      const sendButton = document.getElementById('send-button');
+      if (sendButton) sendButton.disabled = false;
+    }
+  };
 
   const handleClearBroadcast = () => {
     setBroadcastMessage("");
@@ -183,6 +216,37 @@ export default function SessionClientPage() {
     }
   };
 
+  const handleExtendTime = async (user_nmec) => {
+    try {
+      const additionalMinutes = extensionMinutes[user_nmec] || 5;
+      const seconds = additionalMinutes * 60;
+      const toastId = toast.loading(`Extending time for user ${user_nmec}...`); 
+
+      await sessionService.extendUserTime(
+        user_nmec,
+        seconds,
+        course_id,
+        exam_id,
+        session_id
+      );
+
+      await fetchSessionUsers();
+
+      toast.dismiss(toastId);
+      toast.success(`Time extended successfully for user ${user_nmec} by ${additionalMinutes} minutes`);
+    } catch (error) {
+      toast.error(`Failed to extend time: ${error.message || "Unknown error"}`);
+    }
+  };
+
+  const handleMinutesChange = (user_nmec, value) => {
+    const minutes = Math.max(1, parseInt(value) || 1);
+    setExtensionMinutes({
+      ...extensionMinutes,
+      [user_nmec]: minutes
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <main className="container mx-auto px-4 py-8">
@@ -194,35 +258,58 @@ export default function SessionClientPage() {
             <div className="text-4xl font-mono font-semibold tracking-wider">{session?.id}</div>
           </div>
         </div> 
+
+        {/* Session Actions */}
+        <div className="flex justify-center gap-4 mb-8">
+          <Button 
+            id="start-button"
+            className="bg-[#5BA87A] hover:bg-[#4A8B65]"
+            onClick={handleSendBroadcastStart}
+            disabled={session?.is_started}
+          >
+            Start Session
+          </Button>
+          <Button 
+            id="end-button"
+            className="bg-[#993333] hover:bg-[#7A2929]"
+            onClick={handleSendBroadcastEnd}
+            disabled={!session?.is_started}
+          >
+            End Session
+          </Button>
+        </div>
       
         {/* Broadcast Message */}
-        <div className="bg-gray-100 p-3 rounded-lg mb-8 flex flex-col gap-2">
+        <div className="bg-gray-100 p-3 rounded-lg mb-8">
           <div className="flex items-center gap-2">
             <span className="font-medium">Broadcast Message:</span>
             <input 
               type="text" 
               value={broadcastMessage} 
               onChange={(e) => setBroadcastMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSendBroadcastMessage();
+                }
+              }}
               className="flex-grow border p-1 rounded"
               placeholder="Enter message to broadcast to all students..."
             />
+            <Button 
+              id="send-button"
+              className="bg-[#5BA87A] hover:bg-[#4A8B65] whitespace-nowrap"
+              onClick={handleSendBroadcastMessage}
+            >
+              Send
+            </Button>
+            <Button 
+              id="clear-button"
+              className="bg-[#993333] hover:bg-[#7A2929] whitespace-nowrap"
+              onClick={handleClearBroadcast}
+            >
+              Clear
+            </Button>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-4 mb-8">
-          <Button 
-            className="bg-[#5BA87A] hover:bg-[#4A8B65]"
-            onClick={handleSendBroadcast}
-          >
-            Send
-          </Button>
-          <Button 
-            className="bg-[#993333] hover:bg-[#7A2929]"
-            onClick={handleClearBroadcast}
-          >
-            Clear
-          </Button>
         </div>
 
         {/* Table */}
@@ -235,38 +322,57 @@ export default function SessionClientPage() {
               <TableHead>Start Time</TableHead>
               <TableHead>End Time</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-16">Action</TableHead>
+              <TableHead className="w-16">Add Time</TableHead>
             </TableRow>
           </TableHeader>
-            <TableBody>
-              {sessionUsers.length > 0 ? (
-                sessionUsers.map((sessionUser) => (
-                  <TableRow key={sessionUser.id}>
-                    <TableCell>{sessionUser.user_nmec}</TableCell>
-                    <TableCell>{sessionUser.user?.name || "Unknown User"}</TableCell>
-                    <TableCell>{sessionUser.device_id}</TableCell>
-                    <TableCell>{formatDateTime(sessionUser.start_time)}</TableCell>
-                    <TableCell>{formatDateTime(sessionUser.end_time)}</TableCell>
-                    <TableCell>{sessionUser.end_time ? "Completed" : "Connected"}</TableCell>
-                    <TableCell>
+          <TableBody>
+            {sessionUsers.length > 0 ? (
+              sessionUsers.map((sessionUser) => (
+                <TableRow key={sessionUser.id}>
+                  <TableCell>{sessionUser.user_nmec}</TableCell>
+                  <TableCell>{sessionUser.user?.name || "Unknown User"}</TableCell>
+                  <TableCell>{sessionUser.device_id}</TableCell>
+                  <TableCell>{formatDateTime(sessionUser.start_time)}</TableCell>
+                  <TableCell>{formatDateTime(sessionUser.end_time)}</TableCell>
+                  <TableCell>{sessionUser.end_time ? "Completed" : "Connected"}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        value={extensionMinutes[sessionUser.user_nmec] || 5}
+                        onChange={(e) => handleMinutesChange(sessionUser.user_nmec, e.target.value)}
+                        className="w-12 h-8 border rounded-l text-xs text-center"
+                        title="Minutes to add"
+                      />
+                      <Button 
+                        size="sm"
+                        className="rounded border bg-blue-500 text-white hover:bg-blue-800"
+                        onClick={() => handleExtendTime(sessionUser.user_nmec)}
+                        title="Add time"
+                      >
+                        <Plus size={16} />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         onClick={() => handleViewUserDetails(sessionUser)}
+                        title="View details"
                       >
                         ⚙
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    No users entered this session yet.
+                    </div>
                   </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-4">
+                  No users entered this session yet.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center mt-8">

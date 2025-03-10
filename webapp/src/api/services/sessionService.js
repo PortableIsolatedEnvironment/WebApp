@@ -282,27 +282,44 @@ export const sessionService = {
         }
       },
     
-    sendBroadcast: async (sessionId, message) => {
+    sendBroadcastMessage: async (user_nmec, message, course_id, exam_id, session_id) => {
         try {
-          const response = await fetchApi(`/pie/${sessionId}`, {
+          const response = await fetchApi(`/pie/${user_nmec}`, {
             method: "POST",
             body: JSON.stringify({
-              operation: "create",
-              message: message
+              operation: "notification",
+              message: message,
+              courseID: course_id,
+              examID: exam_id,
+              sessionID: session_id
             }),
-            headers: {
-              "Content-Type": "application/json"
-            }
           });
           return response;
         } catch (error) {
           console.error("API Error: Send broadcast message failed", error);
           throw error;
         }
-      }
+      },
 
+      extendUserTime: async (user_nmec, seconds, course_id, exam_id, session_id) => {
+        try {
+          const response = await fetchApi(`/pie/${user_nmec}`, {
+            method: "POST",
+            body: JSON.stringify({
+              operation: "insert_time",
+              message: String(seconds),
+              courseID: course_id,
+              examID: exam_id,
+              sessionID: session_id
+            }),
+          });
+          return response;
+        } catch (error) {
+          console.error("API Error: Send broadcast message failed", error);
+          throw error;
+        }
+      },
 };
-
 
 
 const validateFile = (file) => {

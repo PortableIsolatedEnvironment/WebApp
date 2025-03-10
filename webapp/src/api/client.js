@@ -1,4 +1,4 @@
-const REQUEST_TIMEOUT_MS = 30000; // 30 seconds timeout
+// const REQUEST_TIMEOUT_MS = 30000; // 30 seconds timeout
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function fetchApi(endpoint, options = {}) {
@@ -17,20 +17,20 @@ export async function fetchApi(endpoint, options = {}) {
     // }
 
     // Create AbortController for timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    // const controller = new AbortController();
+    // const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     
     // Perform the fetch with timeout
     const response = await fetch(url, {
       headers,
       mode: 'cors', 
       // credentials: 'include', // Always include credentials for authenticated requests
-      signal: controller.signal,
+      // signal: controller.signal,
       ...options,
     });
 
     // Clear the timeout
-    clearTimeout(timeoutId);
+    // clearTimeout(timeoutId);
 
     // Handle specific error status codes
     if (!response.ok) {

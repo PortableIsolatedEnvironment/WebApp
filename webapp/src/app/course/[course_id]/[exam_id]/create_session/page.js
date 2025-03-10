@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useParams, useRouter } from "next/navigation"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Calendar } from "@/components/ui/calendar"
@@ -118,8 +117,7 @@ export default function CreateSessionForm() {
           course_id: course_id,
           name: values.title,
           date: formattedDate,
-          //transform duration to seconds (int)
-          duration: values.duration.split(':').reduce((acc, time) => 60 * acc + +time, 0),
+          duration: values.duration.split(":").reduce((acc, time, index) => acc + parseInt(time) * (index === 0 ? 3600 : 60), 0),
           room: values.room,
         }
 

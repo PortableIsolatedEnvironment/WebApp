@@ -24,7 +24,7 @@ export default function Navbar({searchQuery, setSearchQuery}) {
           <div className="relative max-w-2xl mx-auto">
             <input
               type="search"
-              placeholder="Search courses..."
+              placeholder="Search..."
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
               className="w-full px-6 py-3 rounded-md bg-white/90 pl-4 pr-10 text-lg"

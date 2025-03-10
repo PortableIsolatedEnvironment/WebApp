@@ -133,13 +133,26 @@ export default function CreateExamForm() {
         // 2. Create a session if the option is enabled
         if (values.createSession) {
           const formattedDate = values.date ? format(values.date, "yyyy-MM-dd") : ""
+
+          let durationInSeconds = 7200 // Default 2 hours
+  
+          if (typeof values.duration === "string" && values.duration.includes(":")) {
+            try {
+              const [hours, minutes] = values.duration.split(":")
+              durationInSeconds = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60)
+              console.log("Duration calculated:", values.duration, "->", durationInSeconds, "seconds")
+            } catch (err) {
+              console.error("Failed to parse duration:", err)
+            }
+          }
+  
           
           const session = {
             exam_id: exam_id,
             course_id: course_id,
             name: values.sessionTitle || values.title,
             date: formattedDate,
-            duration: values.duration + ":00",
+            duration: durationInSeconds,
             room: values.room,
           }
 

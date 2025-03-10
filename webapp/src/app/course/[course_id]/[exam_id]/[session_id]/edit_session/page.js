@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import BackButton from "@/components/back-button"
 import { sessionService } from "@/api/services/sessionService"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -45,15 +45,14 @@ export default function EditSessionForm() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
-    const [formError, setFormError] = useState("")
     const [sessionData, setSessionData] = useState(null)
-    const [activeTab, setActiveTab] = useState("files") // Default to files tab
+    const [activeTab, setActiveTab] = useState("files")
+    const [formError, setFormError] = useState("")
     
     const params = useParams()
     const router = useRouter()
     const { course_id, exam_id, session_id } = params
 
-    // File handling functions
     const handleDragOver = (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -62,8 +61,9 @@ export default function EditSessionForm() {
     const handleDrop = (e) => {
       e.preventDefault()
       e.stopPropagation()
-
+      
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        // Convert FileList to array and update state
         const droppedFiles = Array.from(e.dataTransfer.files)
         setFiles(prevFiles => [...prevFiles, ...droppedFiles])
         e.dataTransfer.clearData()
@@ -72,6 +72,7 @@ export default function EditSessionForm() {
 
     const handleFileChange = (e) => {
       if (e.target.files && e.target.files.length > 0) {
+        // Convert FileList to array and update state
         const selectedFiles = Array.from(e.target.files)
         setFiles(prevFiles => [...prevFiles, ...selectedFiles])
       }
@@ -91,6 +92,7 @@ export default function EditSessionForm() {
         },
     })
 
+    // Load session data
     useEffect(() => {
         async function fetchSessionData() {
             try {
@@ -104,13 +106,25 @@ export default function EditSessionForm() {
                 } else {
                     setActiveTab("files")
                 }
+
+                // Convert duration from seconds to HH:MM format
+                let formattedDuration = "02:00" // Default
+                if (data.duration) {
+                    const totalSeconds = parseInt(data.duration)
+                    
+                    if (!isNaN(totalSeconds)) {
+                        const hours = Math.floor(totalSeconds / 3600)
+                        const minutes = Math.floor((totalSeconds % 3600) / 60)
+                        formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+                    }
+                }
                 
                 // Update form values
                 form.reset({
                     title: data.name,
                     room: data.room,
                     date: new Date(data.date),
-                    duration: data.duration.slice(0, 5), // Format HH:MM from HH:MM:SS
+                    duration: formattedDuration,
                     examLink: data.exam_link || ""
                 })
                 
@@ -124,22 +138,29 @@ export default function EditSessionForm() {
         
         fetchSessionData()
     }, [course_id, exam_id, session_id, form])
-      
-    // Form validation and submission
+    
+    // Validate form data before submitting
     const validateFormBeforeSubmit = (values) => {
       // When editing, we may not be changing the materials
       const hasFiles = files.length > 0
       const hasLink = values.examLink && values.examLink.trim() !== ""
+      const hasExistingMaterials = sessionData?.encrypted_exam_file || sessionData?.exam_link
       
       if (hasFiles && hasLink) {
         setFormError("You cannot provide both files and an exam link. Please choose one option.")
         return false
       }
       
-      // In edit mode, we don't require files/link if they already exist
+      // In edit mode, we don't require new materials if they already exist
+      if (!hasExistingMaterials && !hasFiles && !hasLink) {
+        setFormError("Please provide either exam files or an external link.")
+        return false
+      }
+      
       return true
     }
 
+    // Form submission handler
     async function onSubmit(values) {
       try {
         // Clear previous errors
@@ -155,45 +176,53 @@ export default function EditSessionForm() {
         
         const formattedDate = format(values.date, "yyyy-MM-dd")
         
-        const updatedSession = {
-          exam_id: Number(exam_id),
-          course_id: course_id,
-          name: values.title,
-          date: formattedDate,
-          duration: values.duration + ":00",
-          room: values.room,
-        }
-
-        try {
-          // First update basic session info
-          await sessionService.updateSession(course_id, exam_id, session_id, updatedSession)
-          
-          // Then handle materials updates if any
-          const hasNewFiles = files.length > 0
-          const hasNewLink = values.examLink && values.examLink.trim() !== ""
-          const currentExamLink = sessionData?.exam_link
-          
-          if (hasNewFiles || (hasNewLink && hasNewLink !== currentExamLink)) {
-            const formData = new FormData()
-            
-            if (hasNewFiles) {
-              // For file uploads
-              for (const file of files) {
-                formData.append('files', file)
-              }
-            } else if (hasNewLink) {
-              // For exam link
-              formData.append('exam_link', values.examLink)
-            }
-            
-            await sessionService.uploadFile(course_id, exam_id, session_id, formData)
+        // Parse duration string to seconds more explicitly
+        let durationInSeconds = 7200 // Default 2 hours
+        
+        if (typeof values.duration === "string" && values.duration.includes(":")) {
+          try {
+            const [hours, minutes] = values.duration.split(":")
+            durationInSeconds = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60)
+            console.log("Duration calculated:", values.duration, "->", durationInSeconds, "seconds")
+          } catch (err) {
+            console.error("Failed to parse duration:", err)
           }
-          
-          toast.success("Session updated successfully!")
-          router.push(`/course/${course_id}/${exam_id}`)
-        } catch (apiError) {
-          throw new Error(`API error: ${apiError.message}`)
         }
+    
+        const hasNewFiles = files.length > 0
+        const hasNewLink = values.examLink && values.examLink.trim() !== ""
+        
+        // Use FormData to send everything in one request
+        const formData = new FormData()
+        
+        // Add basic session info
+        formData.append('name', values.title)
+        formData.append('date', formattedDate)
+        formData.append('duration', String(durationInSeconds)) // Explicitly convert to string
+        formData.append('room', values.room)
+        formData.append('exam_id', Number(exam_id))
+        formData.append('course_id', course_id)
+        
+        // For debugging - log the FormData content
+        console.log("Form data being sent:")
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`)
+        }
+        
+        // Add files or link if provided
+        if (hasNewFiles) {
+          for (const file of files) {
+            formData.append('files', file)
+          }
+        } else if (hasNewLink) {
+          formData.append('exam_link', values.examLink)
+        }
+        
+        // Use the updateSessionWithFiles method to send everything at once
+        await sessionService.updateSessionWithFiles(course_id, exam_id, session_id, formData)
+        
+        toast.success("Session updated successfully!")
+        router.push(`/course/${course_id}/${exam_id}`)
       } catch (err) {
         setError(err.message || "An error occurred while updating the session")
         toast.error(err.message || "An error occurred while updating the session")
@@ -202,33 +231,37 @@ export default function EditSessionForm() {
         setIsSubmitting(false)
       }
     }
-  
+
+    // Show loading state
     if (isLoading) {
       return (
         <div className="max-w-4xl mx-auto p-6">
-          <Skeleton className="h-10 w-3/4 mb-6" />
+          <h1 className="text-2xl font-bold mb-6">Edit Session</h1>
           <div className="space-y-6">
             <Skeleton className="h-10 w-full" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
             <Skeleton className="h-40 w-full" />
             <div className="flex justify-between">
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-20" />
               <Skeleton className="h-10 w-32" />
             </div>
           </div>
         </div>
       )
     }
-  
+
+    // Show error state
     if (error && !sessionData) {
       return (
         <div className="max-w-4xl mx-auto p-6">
-          <h1 className="text-2xl font-bold mb-6">Error Loading Session</h1>
-          <p className="text-red-500">{error}</p>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </Alert>
           <div className="mt-4">
             <BackButton />
           </div>
@@ -310,37 +343,41 @@ export default function EditSessionForm() {
                 name="duration"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration (hours:minutes)</FormLabel>
+                    <FormLabel>Duration</FormLabel>
                     <FormControl>
-                      <div className="flex items-center gap-2">
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          max="10" 
-                          placeholder="Hours" 
-                          value={field.value.split(':')[0] || ""}
-                          onChange={(e) => {
-                            const hours = e.target.value;
-                            const minutes = field.value.split(':')[1] || "00";
-                            field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
-                          }}
-                          className="w-20"
-                        />
-                        <span>:</span>
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          max="59" 
-                          placeholder="Minutes" 
-                          value={field.value.split(':')[1] || ""}
-                          onChange={(e) => {
-                            const hours = field.value.split(':')[0] || "00";
-                            const minutes = e.target.value;
-                            field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
-                          }}
-                          className="w-20"
-                        />
-                        <span className="ml-2 text-sm text-muted-foreground">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            max="10" 
+                            placeholder="Hours" 
+                            value={(field.value && field.value.includes(':')) ? field.value.split(':')[0] : "00"}
+                            onChange={(e) => {
+                              const hours = e.target.value;
+                              const minutes = (field.value && field.value.includes(':')) ? 
+                                field.value.split(':')[1] || "00" : "00";
+                              field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
+                            }}
+                            className="w-20"
+                          />
+                          <span>:</span>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            max="59" 
+                            placeholder="Minutes" 
+                            value={(field.value && field.value.includes(':')) ? field.value.split(':')[1] : "00"}
+                            onChange={(e) => {
+                              const hours = (field.value && field.value.includes(':')) ? 
+                                field.value.split(':')[0] || "00" : "00";
+                              const minutes = e.target.value;
+                              field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground">
                           Total duration (e.g., 02:00 for 2 hours)
                         </span>
                       </div>
@@ -354,7 +391,6 @@ export default function EditSessionForm() {
             <div className="border rounded-md p-4">
               <h3 className="font-medium mb-4">Exam Materials</h3>
 
-              {/* Current materials info */}
               {(sessionData?.encrypted_exam_file || sessionData?.exam_link) && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-md">
                   <p className="text-sm font-medium">Current materials:</p>
