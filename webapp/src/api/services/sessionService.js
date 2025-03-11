@@ -337,7 +337,27 @@ export const sessionService = {
           console.error("API Error: Send broadcast message failed", error);
           throw error;
         }
-      }
+      },
+
+      fetchSubmissions: async (user_nmec, courseId, examId, sessionId) => {
+        try {
+          const response = await fetchApi(`/pie/${user_nmec}`, {
+            method: "POST",
+            body: JSON.stringify({
+              operation: "send_exams",
+              message: "The professor has requested your submissions",
+              courseID: courseId,
+              examID: examId,
+              sessionID: sessionId
+            }),
+          });
+          return response;
+        }
+        catch (error) {
+          console.error("API Error: Fetch submissions failed", error);
+          throw error;
+        }
+      },
 };
 
 

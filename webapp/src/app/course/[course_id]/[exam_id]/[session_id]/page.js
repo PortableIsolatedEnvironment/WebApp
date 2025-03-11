@@ -195,6 +195,44 @@ export default function SessionClientPage() {
     router.push(`/course/${course_id}/${exam_id}/${session_id}/${sessionUser.user_nmec}`);
   };
 
+  // Just like Broadcast message
+  const handleFetchSubmissions = async () => {
+    const fetchButton = document.getElementById('fetch-button');
+    try {
+      if (fetchButton) {
+        fetchButton.disabled = true;
+        fetchButton.innerText = 'Fetching...';
+      }
+      
+      const toastId = toast.loading("Fetching submissions...");
+      const fetchPromises = sessionUsers.map(sessionUser =>
+        sessionService.fetchSubmissions(
+          sessionUser.user_nmec,
+          course_id,
+          exam_id,
+          session_id
+        )
+      );
+
+      await Promise.all(fetchPromises);
+
+      await fetchSessionUsers();
+
+      toast.dismiss(toastId);
+      toast.success("Submissions fetched successfully");
+    }
+    catch (error) {
+      console.error('Error fetching submissions:', error);
+      alert(`Fetch failed: ${error.message || 'Unknown error'}`);
+    } finally {
+      if (fetchButton) {
+        fetchButton.disabled = false;
+        fetchButton.innerText = 'Fetch Submissions';
+      }
+    }
+    
+  };
+
   const handleDownloadSubmissions = async () => {
     const downloadButton = document.getElementById('download-button');
     try {
@@ -431,6 +469,12 @@ export default function SessionClientPage() {
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center mt-8">
           <BackButton />
+          <Button 
+            id="fetch-button"
+            onClick={handleFetchSubmissions}
+          >
+            Fetch Submissions
+          </Button>
           <Button 
             type="button"
             id="download-button"
