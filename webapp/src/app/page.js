@@ -20,7 +20,7 @@ export default async function CoursesPage() {
       {/* <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> */}
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Selecione a Unidade Curricular!</h1>
+        <h1 className="text-4xl font-bold mb-8">Select the Course</h1>
 
         {/* {filteredCourses.length == 0 ?(
           <p className="text-center text-gray-500"> Nenhuma Unidade Curricular Encontrada.</p>

@@ -17,6 +17,7 @@ export default function SessionClientPage() {
   const [error, setError] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [extensionMinutes, setExtensionMinutes] = useState({});
+  const [allUsersExtensionMinutes, setAllUsersExtensionMinutes] = useState(5);
   const params = useParams();
   const router = useRouter();
   const { course_id, exam_id, session_id } = params;
@@ -191,7 +192,7 @@ export default function SessionClientPage() {
   };
 
   const handleViewUserDetails = (sessionUser) => {
-    console.log("View details for:", sessionUser);
+    router.push(`/course/${course_id}/${exam_id}/${session_id}/${sessionUser.user_nmec}`);
   };
 
   const handleDownloadSubmissions = async () => {
@@ -204,7 +205,7 @@ export default function SessionClientPage() {
       
       await sessionService.downloadSubmissions(course_id, exam_id, session_id);
       
-      // Optional: Show success toast
+      toast.success('Submissions downloaded successfully');
     } catch (error) {
       console.error('Error downloading submissions:', error);
       alert(`Download failed: ${error.message || 'Unknown error'}`);
@@ -245,6 +246,37 @@ export default function SessionClientPage() {
       ...extensionMinutes,
       [user_nmec]: minutes
     });
+  };
+
+  const handleExtendTimeAll = async () => {
+    try {
+      if(sessionUsers.length === 0) {
+        toast.error("No users to extend time for");
+        return;
+      }
+
+      const seconds = allUsersExtensionMinutes * 60;
+      const toastId = toast.loading(`Extending time for all users by ${allUsersExtensionMinutes} minutes...`);
+      
+      const extensionPromises = sessionUsers.map(sessionUser =>
+        sessionService.extendUserTime(
+          sessionUser.user_nmec,
+          seconds,
+          course_id,
+          exam_id,
+          session_id
+        )
+      );
+
+      await Promise.all(extensionPromises);
+
+      await fetchSessionUsers();
+
+      toast.dismiss(toastId);
+      toast.success(`Time extended successfully for all users by ${allUsersExtensionMinutes} minutes`);
+    } catch (error) {
+      toast.error(`Failed to extend time for all users: ${error.message || "Unknown error"}`);
+    }
   };
 
   return (
@@ -311,7 +343,29 @@ export default function SessionClientPage() {
             </Button>
           </div>
         </div>
-
+        {/* Extend Time for All Users */}
+        <div className="bg-gray-100 p-3 rounded-lg mb-8">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Extend Time for All Users:</span>
+            <input 
+              type="number"
+              min="1"
+              value={allUsersExtensionMinutes} 
+              onChange={(e) => setAllUsersExtensionMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-16 border p-1 rounded text-center"
+              placeholder="5"
+            />
+            <span className="mr-2">minutes</span>
+            <Button 
+              id="extend-all-button"
+              className="bg-blue-500 hover:bg-blue-700 whitespace-nowrap"
+              onClick={handleExtendTimeAll}
+              disabled={sessionUsers.length === 0}
+            >
+              Extend Time for All
+            </Button>
+          </div>
+        </div>
         {/* Table */}
         <Table>
           <TableHeader>
