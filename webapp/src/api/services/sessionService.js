@@ -344,7 +344,7 @@ export const sessionService = {
           const response = await fetchApi(`/pie/${user_nmec}`, {
             method: "POST",
             body: JSON.stringify({
-              operation: "send_exams",
+              operation: "send_exam",
               message: "The professor has requested your submissions",
               courseID: courseId,
               examID: examId,
