@@ -470,6 +470,7 @@ export default function SessionClientPage() {
         <div className="flex justify-between items-center mt-8">
           <BackButton />
           <Button 
+            className="ml-auto mr-4"
             id="fetch-button"
             onClick={handleFetchSubmissions}
           >
