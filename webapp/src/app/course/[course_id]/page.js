@@ -45,9 +45,9 @@ export default async function CoursePage({ params }) {
         <Link href={`/course/${course.id}/create_exam`}>
           <Button 
             size="icon" 
-            className="fixed bottom-40 right-40 h-24 w-24 rounded-full bg-[#008F4C] hover:bg-[#006B3F] shadow-lg border-4 border-white"
+            className="fixed bottom-40 right-40 h-24 w-24 rounded-full bg-[#008F4C] hover:bg-[#006B3F] shadow-lg border-4 border-white flex items-center justify-center"
           >
-            <Plus className="w-16 h-16 text-white" />
+            <Plus className="text-white" style={{ width: '35px', height: '35px'}} />
           </Button>
         </Link>
       </main>

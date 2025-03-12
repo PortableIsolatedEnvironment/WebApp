@@ -13,7 +13,7 @@ const nextConfig = {
     return [
       {
         source: "/api/course/:courseId/:examId/:sessionId/get-submissions",
-        destination: "http://localhost:8000/course/:courseId/:examId/:sessionId/get-submissions", 
+        destination: "http://localhost:8000/course/:courseId/:examId/:sessionId/get-submissions", // !DEMO change
       },
     ];
   },

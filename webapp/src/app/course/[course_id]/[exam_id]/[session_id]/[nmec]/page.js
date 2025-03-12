@@ -99,7 +99,7 @@ export default function MonitoringPage() {
       }
       
       // Call an API to end the exam for this specific user with a message
-      const message = "Exam ended by proctor";
+      const message = "";
       await sessionService.endUserSession(nmec, course_id, exam_id, session_id, message);
       toast.success(`Exam ended for ${userData?.name}`);
     } catch (err) {

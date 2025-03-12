@@ -1,5 +1,5 @@
 // const REQUEST_TIMEOUT_MS = 30000; // 30 seconds timeout
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'; // !DEMO change 
 
 export async function fetchApi(endpoint, options = {}) {
   try {

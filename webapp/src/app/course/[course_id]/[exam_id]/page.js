@@ -50,7 +50,7 @@ if (!exam) {
             size="icon" 
             className="fixed bottom-40 right-40 h-24 w-24 rounded-full bg-[#008F4C] hover:bg-[#006B3F] shadow-lg border-4 border-white"
           >
-            <Plus className="w-16 h-16 text-white" />
+            <Plus className="text-white" style={{ width: '35px', height: '35px'}} />
           </Button>
         </Link>
 
