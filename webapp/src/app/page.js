@@ -26,7 +26,7 @@ export default async function CoursesPage() {
           <p className="text-center text-gray-500"> Nenhuma Unidade Curricular Encontrada.</p>
         ):( */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course, index) => (
+           {courses && courses.map((course, index) => (
             <Link key={index} href={`/course/${course.id}`}>
               <CourseCard title={course.name} description={course.id} />
             </Link>
