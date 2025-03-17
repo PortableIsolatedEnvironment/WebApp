@@ -196,7 +196,7 @@ export const sessionService = {
             return false;
           }
           
-          const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/end`, {
+          const response = await fetchApi(`${ENDPOINTS.SESSION_END(courseId, examId, sessionId)}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -316,6 +316,45 @@ export const sessionService = {
           return response;
         } catch (error) {
           console.error("API Error: Send broadcast message failed", error);
+          throw error;
+        }
+      },
+
+      endUserSession: async (user_nmec, course_id, exam_id, session_id, message) => {
+        try {
+          const response = await fetchApi(`/pie/${user_nmec}`, {
+            method: "POST",
+            body: JSON.stringify({
+              operation: "finish_exam",
+              message: message,
+              courseID: course_id,
+              examID: exam_id,
+              sessionID: session_id
+            }),
+          });
+          return response;
+        } catch (error) {
+          console.error("API Error: Send broadcast message failed", error);
+          throw error;
+        }
+      },
+
+      fetchSubmissions: async (user_nmec, courseId, examId, sessionId) => {
+        try {
+          const response = await fetchApi(`/pie/${user_nmec}`, {
+            method: "POST",
+            body: JSON.stringify({
+              operation: "send_exam",
+              message: "The professor has requested your submissions",
+              courseID: courseId,
+              examID: examId,
+              sessionID: sessionId
+            }),
+          });
+          return response;
+        }
+        catch (error) {
+          console.error("API Error: Fetch submissions failed", error);
           throw error;
         }
       },

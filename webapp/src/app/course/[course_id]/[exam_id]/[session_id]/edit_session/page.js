@@ -63,7 +63,6 @@ export default function EditSessionForm() {
       e.stopPropagation()
       
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        // Convert FileList to array and update state
         const droppedFiles = Array.from(e.dataTransfer.files)
         setFiles(prevFiles => [...prevFiles, ...droppedFiles])
         e.dataTransfer.clearData()
@@ -72,7 +71,6 @@ export default function EditSessionForm() {
 
     const handleFileChange = (e) => {
       if (e.target.files && e.target.files.length > 0) {
-        // Convert FileList to array and update state
         const selectedFiles = Array.from(e.target.files)
         setFiles(prevFiles => [...prevFiles, ...selectedFiles])
       }
@@ -92,7 +90,6 @@ export default function EditSessionForm() {
         },
     })
 
-    // Load session data
     useEffect(() => {
         async function fetchSessionData() {
             try {
@@ -100,14 +97,12 @@ export default function EditSessionForm() {
                 const data = await sessionService.getSession(course_id, exam_id, session_id)
                 setSessionData(data)
                 
-                // Set the active tab based on whether the session has an exam link
                 if (data.exam_link && data.exam_link.trim() !== '') {
                     setActiveTab("link")
                 } else {
                     setActiveTab("files")
                 }
 
-                // Convert duration from seconds to HH:MM format
                 let formattedDuration = "02:00" // Default
                 if (data.duration) {
                     const totalSeconds = parseInt(data.duration)
@@ -118,17 +113,23 @@ export default function EditSessionForm() {
                         formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
                     }
                 }
+
+              let displayExamLink = ""
+              if (data.exam_link && data.exam_link.includes('|')) {
+                  displayExamLink = data.exam_link.split('|')[0];
+              } else if (data.exam_link) {
+                  displayExamLink = data.exam_link;
+              }
+              
+              form.reset({
+                  title: data.name,
+                  room: data.room,
+                  date: new Date(data.date),
+                  duration: formattedDuration,
+                  examLink: displayExamLink,
+              })
                 
-                // Update form values
-                form.reset({
-                    title: data.name,
-                    room: data.room,
-                    date: new Date(data.date),
-                    duration: formattedDuration,
-                    examLink: data.exam_link || ""
-                })
-                
-                setIsLoading(false)
+            setIsLoading(false)
             } catch (err) {
                 console.error("Failed to fetch session data:", err)
                 setError("Failed to load session data. Please try again.")
@@ -139,9 +140,7 @@ export default function EditSessionForm() {
         fetchSessionData()
     }, [course_id, exam_id, session_id, form])
     
-    // Validate form data before submitting
     const validateFormBeforeSubmit = (values) => {
-      // When editing, we may not be changing the materials
       const hasFiles = files.length > 0
       const hasLink = values.examLink && values.examLink.trim() !== ""
       const hasExistingMaterials = sessionData?.encrypted_exam_file || sessionData?.exam_link
@@ -151,7 +150,6 @@ export default function EditSessionForm() {
         return false
       }
       
-      // In edit mode, we don't require new materials if they already exist
       if (!hasExistingMaterials && !hasFiles && !hasLink) {
         setFormError("Please provide either exam files or an external link.")
         return false
@@ -160,14 +158,11 @@ export default function EditSessionForm() {
       return true
     }
 
-    // Form submission handler
     async function onSubmit(values) {
       try {
-        // Clear previous errors
         setFormError("")
         setError(null)
         
-        // Validate form data
         if (!validateFormBeforeSubmit(values)) {
           return
         }
@@ -176,7 +171,6 @@ export default function EditSessionForm() {
         
         const formattedDate = format(values.date, "yyyy-MM-dd")
         
-        // Parse duration string to seconds more explicitly
         let durationInSeconds = 7200 // Default 2 hours
         
         if (typeof values.duration === "string" && values.duration.includes(":")) {
@@ -192,24 +186,19 @@ export default function EditSessionForm() {
         const hasNewFiles = files.length > 0
         const hasNewLink = values.examLink && values.examLink.trim() !== ""
         
-        // Use FormData to send everything in one request
         const formData = new FormData()
         
-        // Add basic session info
         formData.append('name', values.title)
         formData.append('date', formattedDate)
-        formData.append('duration', String(durationInSeconds)) // Explicitly convert to string
+        formData.append('duration', String(durationInSeconds))
         formData.append('room', values.room)
         formData.append('exam_id', Number(exam_id))
         formData.append('course_id', course_id)
         
-        // For debugging - log the FormData content
-        console.log("Form data being sent:")
         for (let [key, value] of formData.entries()) {
           console.log(`${key}: ${value}`)
         }
         
-        // Add files or link if provided
         if (hasNewFiles) {
           for (const file of files) {
             formData.append('files', file)
@@ -218,7 +207,6 @@ export default function EditSessionForm() {
           formData.append('exam_link', values.examLink)
         }
         
-        // Use the updateSessionWithFiles method to send everything at once
         await sessionService.updateSessionWithFiles(course_id, exam_id, session_id, formData)
         
         toast.success("Session updated successfully!")
@@ -232,7 +220,6 @@ export default function EditSessionForm() {
       }
     }
 
-    // Show loading state
     if (isLoading) {
       return (
         <div className="max-w-4xl mx-auto p-6">
@@ -254,7 +241,6 @@ export default function EditSessionForm() {
       )
     }
 
-    // Show error state
     if (error && !sessionData) {
       return (
         <div className="max-w-4xl mx-auto p-6">
@@ -401,7 +387,7 @@ export default function EditSessionForm() {
                   )}
                   {sessionData?.exam_link && (
                     <p className="text-sm text-muted-foreground">
-                      Link: {sessionData.exam_link}
+                      Link: {sessionData.exam_link.includes('|') ? sessionData.exam_link.split('|')[0] : sessionData.exam_link}
                     </p>
                   )}
                 </div>
