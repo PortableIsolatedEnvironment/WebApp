@@ -16,13 +16,13 @@ export default async function CoursesPage() {
   }
   
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-light-gray">
       {/* <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> */}
 
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">Select the Course</h1>
 
-        {/* {filteredCourses.length == 0 ?(
+        {/* {} ?(
           <p className="text-center text-gray-500"> Nenhuma Unidade Curricular Encontrada.</p>
         ):( */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

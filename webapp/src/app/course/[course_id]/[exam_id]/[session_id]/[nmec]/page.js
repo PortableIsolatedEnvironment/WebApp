@@ -56,35 +56,91 @@ export default function MonitoringPage() {
     // const intervalId = setInterval(fetchData, 10000);
     // return () => clearInterval(intervalId);
   }, [nmec, session_id, course_id, exam_id]);
-    
-  // Handle time extension
+
+  useEffect(() => {
+    // Calculate remaining time
+    if (sessionUser?.start_time && !sessionUser?.end_time) {
+      const calculateRemainingTime = () => {
+        const startTime = new Date(sessionUser.start_time);
+        const now = new Date();
+        
+        const durationMs = (sessionUser.duration || 60) * 1000;
+        const extensionMs = (sessionUser.changed_time || 0) * 1000;
+        const expectedEndTime = new Date(startTime.getTime() + durationMs + extensionMs);
+        
+        const remainingMs = expectedEndTime - now;
+        
+        if (remainingMs <= 0) {
+          setRemainingTime("Time's up!");
+          return;
+        }
+  
+        const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+        const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+        
+        setRemainingTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      };
+  
+      calculateRemainingTime();
+      
+      const timerId = setInterval(calculateRemainingTime, 1000);
+      return () => clearInterval(timerId);
+    }
+  }, [sessionUser]);
+
   const handleAddTime = async () => {
     try {
       const seconds = extensionMinutes * 60;
+
+      setSessionUser(prevUser => ({
+        ...prevUser,
+        changed_time: (prevUser.changed_time || 0) + seconds
+      }));
+      
       await sessionService.extendUserTime(
         nmec,
         seconds,
         course_id, 
         exam_id,
-        session_id
+        session_id,
+        sessionUser.id
       );
+
+      const sessionUsers = await sessionService.getSessionUsers(session_id);
+      const updatedSessionUser = sessionUsers.find(su => su.user_nmec.toString() === nmec);
+      if (updatedSessionUser) {
+        setSessionUser(updatedSessionUser);
+      }
       toast.success(`Added ${extensionMinutes} minutes to ${userData?.name}'s exam time`);
     } catch (err) {
       toast.error(`Failed to add time: ${err.message || "Unknown error"}`);
     }
   };
 
-  // Handle time reduction
   const handleReduceTime = async () => {
     try {
       const seconds = -(extensionMinutes * 60); // Negative value to reduce time
+
+      setSessionUser(prevUser => ({
+        ...prevUser,
+        changed_time: (prevUser.changed_time || 0) + seconds
+      }));
+
       await sessionService.extendUserTime(
         nmec,
         seconds,
         course_id,
         exam_id, 
-        session_id
+        session_id,
+        sessionUser.id
       );
+
+      const sessionUsers = await sessionService.getSessionUsers(session_id);
+      const updatedSessionUser = sessionUsers.find(su => su.user_nmec.toString() === nmec);
+      if (updatedSessionUser) {
+        setSessionUser(updatedSessionUser);
+      }
       toast.success(`Reduced ${extensionMinutes} minutes from ${userData?.name}'s exam time`);
     } catch (err) {
       toast.error(`Failed to reduce time: ${err.message || "Unknown error"}`);
@@ -152,7 +208,7 @@ export default function MonitoringPage() {
   };
   
       return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-light-gray">
           {/* Main Content */}
           <main className="p-8">
             {/* Student Info */}

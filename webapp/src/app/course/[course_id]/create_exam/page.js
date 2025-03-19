@@ -195,7 +195,7 @@ export default function CreateExamForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6 bg-light-gray">
       <h1 className="text-2xl font-bold mb-6">Create New Exam</h1>
 
       {error && (

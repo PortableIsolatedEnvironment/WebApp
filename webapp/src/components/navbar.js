@@ -5,7 +5,7 @@ import Link from "next/link"
 
 export default function Navbar({searchQuery, setSearchQuery}) { 
   return (
-    <nav className="bg-green-800 p-3 h-20">
+    <nav className="bg-[#007f39] p-3 h-20">
       <div className="container mx-auto flex items-center justify-between">
 
         {/* Logo */}

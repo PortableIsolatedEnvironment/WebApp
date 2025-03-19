@@ -301,9 +301,9 @@ export const sessionService = {
         }
       },
 
-      extendUserTime: async (user_nmec, seconds, course_id, exam_id, session_id) => {
+      extendUserTime: async (user_nmec, seconds, course_id, exam_id, session_id, sessionUserId = null) => {
         try {
-          const response = await fetchApi(`/pie/${user_nmec}`, {
+          const pubsubResponse = await fetchApi(`/pie/${user_nmec}`, {
             method: "POST",
             body: JSON.stringify({
               operation: "insert_time",
@@ -313,28 +313,35 @@ export const sessionService = {
               sessionID: session_id
             }),
           });
-          return response;
+          
+          if (sessionUserId) {
+            try {
+              const sessionUsers = await sessionService.getSessionUsers(session_id);
+              const currentUser = sessionUsers.find(user => user.id === sessionUserId);
+              
+              if (currentUser) {
+                const currentTimeChanged = currentUser.changed_time || 0;
+                const newTimeChanged = currentTimeChanged + seconds;
+                
+                // Use PATCH to only update the time_changed field
+                await fetchApi(ENDPOINTS.SESSION_USER_TIME(sessionUserId), {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    changed_time: newTimeChanged
+                  }),
+                });
+              }
+            } catch (dbError) {
+              console.error("Failed to update time_changed in database:", dbError);
+            }
+          }
+          
+          return pubsubResponse;
         } catch (error) {
-          console.error("API Error: Send broadcast message failed", error);
-          throw error;
-        }
-      },
-
-      endUserSession: async (user_nmec, course_id, exam_id, session_id, message) => {
-        try {
-          const response = await fetchApi(`/pie/${user_nmec}`, {
-            method: "POST",
-            body: JSON.stringify({
-              operation: "finish_exam",
-              message: message,
-              courseID: course_id,
-              examID: exam_id,
-              sessionID: session_id
-            }),
-          });
-          return response;
-        } catch (error) {
-          console.error("API Error: Send broadcast message failed", error);
+          console.error("API Error: Time extension failed", error);
           throw error;
         }
       },

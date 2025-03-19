@@ -8,7 +8,6 @@ import { sessionService } from "@/api/services/sessionService";
 import { userService } from "@/api/services/userService";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
-import { Plus } from "lucide-react";
 
 export default function SessionClientPage() {
   const [session, setSession] = useState(null);
@@ -16,7 +15,7 @@ export default function SessionClientPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
-  const [extensionMinutes, setExtensionMinutes] = useState({});
+  const [elapsedTimes, setElapsedTimes] = useState({});
   const [allUsersExtensionMinutes, setAllUsersExtensionMinutes] = useState(5);
   const params = useParams();
   const router = useRouter();
@@ -38,11 +37,53 @@ export default function SessionClientPage() {
     }
   };
 
+  const formatRemainingTime = (startTimeStr, sessionUser) => {
+    if (!startTimeStr || startTimeStr === "null") return "Not started";
+    
+    try {
+      const startTime = new Date(startTimeStr);
+      if (isNaN(startTime.getTime())) return "Invalid time";
+      
+      const now = new Date();
+      
+      const durationSeconds = session?.duration || 60;
+      const durationMs = durationSeconds * 1000;
+      const extensionSeconds = sessionUser.changed_time || 0;
+      const extensionMs = extensionSeconds * 1000;
+      
+      const expectedEndTime = new Date(startTime.getTime() + durationMs + extensionMs);
+      
+      // Calculate remaining time
+      const remainingMs = expectedEndTime - now;
+      
+      if (remainingMs <= 0) {
+        return <span className="text-red-600 font-bold">Time's up!</span>;
+      }
+
+      const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+      const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+      
+      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      if (remainingMs < 5 * 60 * 1000) { 
+        return <span className="text-red-600">{timeStr}</span>;
+      } else if (remainingMs < 15 * 60 * 1000) {
+        return <span className="text-orange-500">{timeStr}</span>;
+      } else {
+        return timeStr;
+      }
+    } catch (error) {
+      console.error("Error calculating remaining time:", error);
+      return "Error";
+    }
+  };
+
+
   const fetchSessionUsers = useCallback(async () => {
     try {
       const sessionUsersData = await sessionService.getSessionUsers(session_id);
       
-      // Fetch complete user details for each session user
       const enhancedSessionUsers = await Promise.all(
         sessionUsersData.map(async (sessionUser) => {
           try {
@@ -96,7 +137,7 @@ export default function SessionClientPage() {
     fetchInitialData();
   }, [course_id, exam_id, session_id, router, fetchSessionUsers]);
 
-  // Set up polling for session users
+
   useEffect(() => {
     // Only start polling if we have the initial data loaded
     if (!isLoading && session) {
@@ -109,6 +150,22 @@ export default function SessionClientPage() {
       return () => clearInterval(intervalId);
     }
   }, [isLoading, session, fetchSessionUsers, pollingInterval]);
+
+  useEffect(() => {
+    const timerInterval = setInterval(() => {
+      setElapsedTimes(prevTimes => {
+        const newRemainingTimes = {};
+        sessionUsers.forEach(user => {
+          if (user.start_time && !user.end_time) {
+            newRemainingTimes[user.id] = formatRemainingTime(user.start_time, user);
+          }
+        });
+        return newRemainingTimes;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timerInterval);
+  }, [sessionUsers]);
 
   if (error) {
     return null;
@@ -123,7 +180,7 @@ export default function SessionClientPage() {
     return null; // Add this return to prevent rendering after redirect
   }
 
-  const handleSendBroadcastStart = async () => {
+  const handleSendSessionStart = async () => {
     try {
       await sessionService.startSession(course_id, exam_id, session_id);
 
@@ -138,7 +195,7 @@ export default function SessionClientPage() {
     }
   };
 
-  const handleSendBroadcastEnd = async () => {
+  const handleSendSessionEnd = async () => {
     try {
       await sessionService.endSession(course_id, exam_id, session_id);
       toast.success("Broadcast ended successfully");
@@ -255,36 +312,6 @@ export default function SessionClientPage() {
     }
   };
 
-  const handleExtendTime = async (user_nmec) => {
-    try {
-      const additionalMinutes = extensionMinutes[user_nmec] || 5;
-      const seconds = additionalMinutes * 60;
-      const toastId = toast.loading(`Extending time for user ${user_nmec}...`); 
-
-      await sessionService.extendUserTime(
-        user_nmec,
-        seconds,
-        course_id,
-        exam_id,
-        session_id
-      );
-
-      await fetchSessionUsers();
-
-      toast.dismiss(toastId);
-      toast.success(`Time extended successfully for user ${user_nmec} by ${additionalMinutes} minutes`);
-    } catch (error) {
-      toast.error(`Failed to extend time: ${error.message || "Unknown error"}`);
-    }
-  };
-
-  const handleMinutesChange = (user_nmec, value) => {
-    const minutes = Math.max(1, parseInt(value) || 1);
-    setExtensionMinutes({
-      ...extensionMinutes,
-      [user_nmec]: minutes
-    });
-  };
 
   const handleExtendTimeAll = async () => {
     try {
@@ -295,6 +322,13 @@ export default function SessionClientPage() {
 
       const seconds = allUsersExtensionMinutes * 60;
       const toastId = toast.loading(`Extending time for all users by ${allUsersExtensionMinutes} minutes...`);
+
+      setSessionUsers(prevUsers => 
+        prevUsers.map(user => ({
+          ...user,
+          changed_time: (user.changed_time || 0) + seconds
+        }))
+      );
       
       const extensionPromises = sessionUsers.map(sessionUser =>
         sessionService.extendUserTime(
@@ -302,30 +336,32 @@ export default function SessionClientPage() {
           seconds,
           course_id,
           exam_id,
-          session_id
+          session_id,
+          sessionUser.id
         )
       );
 
       await Promise.all(extensionPromises);
-
+      setElapsedTimes({});
       await fetchSessionUsers();
 
       toast.dismiss(toastId);
       toast.success(`Time extended successfully for all users by ${allUsersExtensionMinutes} minutes`);
     } catch (error) {
+      await fetchSessionUsers();
       toast.error(`Failed to extend time for all users: ${error.message || "Unknown error"}`);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-light-gray">
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">{session?.name}</h1>
         
         {/* Generate Code Section */}
         <div className="flex flex-col items-center justify-center mb-12 mt-8">
           <div className="flex flex-col items-center gap-6 p-8 rounded-lg bg-gray-50 w-full max-w-2xl">
-            <div className="text-4xl font-mono font-semibold tracking-wider">{session?.id}</div>
+            <div className="text-4xl font-bold ">{session?.join_code}</div>
           </div>
         </div> 
 
@@ -334,7 +370,7 @@ export default function SessionClientPage() {
           <Button 
             id="start-button"
             className="bg-[#5BA87A] hover:bg-[#4A8B65]"
-            onClick={handleSendBroadcastStart}
+            onClick={handleSendSessionStart}
             disabled={session?.is_started}
           >
             Start Session
@@ -342,7 +378,7 @@ export default function SessionClientPage() {
           <Button 
             id="end-button"
             className="bg-[#993333] hover:bg-[#7A2929]"
-            onClick={handleSendBroadcastEnd}
+            onClick={handleSendSessionEnd}
             disabled={!session?.is_started}
           >
             End Session
@@ -412,9 +448,9 @@ export default function SessionClientPage() {
               <TableHead>Student Name</TableHead>
               <TableHead>Device ID</TableHead>
               <TableHead>Start Time</TableHead>
+              <TableHead>Remaining Time</TableHead>
               <TableHead>End Time</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-16">Add Time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -425,33 +461,29 @@ export default function SessionClientPage() {
                   <TableCell>{sessionUser.user?.name || "Unknown User"}</TableCell>
                   <TableCell>{sessionUser.device_id}</TableCell>
                   <TableCell>{formatDateTime(sessionUser.start_time)}</TableCell>
+                  <TableCell>
+                  {sessionUser.start_time && !sessionUser.end_time ? (
+                    <span className="font-mono bg-green-100 px-2 py-1 rounded text-green-800 font-medium">
+                      {elapsedTimes[sessionUser.id] || formatRemainingTime(sessionUser.start_time, sessionUser)}
+                    </span>
+                  ) : sessionUser.end_time ? (
+                    "Completed"
+                  ) : (
+                    "Not started"
+                  )}
+                  </TableCell>
                   <TableCell>{formatDateTime(sessionUser.end_time)}</TableCell>
                   <TableCell>{sessionUser.end_time ? "Completed" : "Connected"}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        value={extensionMinutes[sessionUser.user_nmec] || 5}
-                        onChange={(e) => handleMinutesChange(sessionUser.user_nmec, e.target.value)}
-                        className="w-12 h-8 border rounded-l text-xs text-center"
-                        title="Minutes to add"
-                      />
+                    <div className="flex items-center gap-4">
                       <Button 
-                        size="sm"
-                        className="rounded border bg-blue-500 text-white hover:bg-blue-800"
-                        onClick={() => handleExtendTime(sessionUser.user_nmec)}
-                        title="Add time"
-                      >
-                        <Plus size={16} />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                        variant="outline" 
+                        size="sm" 
                         onClick={() => handleViewUserDetails(sessionUser)}
-                        title="View details"
-                      >
-                        ⚙
+                        title="View User details"
+                        className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                        >
+                        View User
                       </Button>
                     </div>
                   </TableCell>

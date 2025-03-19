@@ -38,4 +38,5 @@ export const ENDPOINTS = {
   SESSION_USERS: "/session-users", // * ADMIN SIDE (GET ALL)
   SESSION_USER: (sessionUserId) => `/session-users/${sessionUserId}`,
   SESSION_USER_CREATE: "/session-users/create", // * STUDENT SIDE
+  SESSION_USER_TIME: (sessionUserId) => `/session-users/${sessionUserId}/time`,
 };

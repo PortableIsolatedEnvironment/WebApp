@@ -161,7 +161,7 @@ export default function CreateSessionForm() {
     }
   
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6 bg-light-gray">
         <h1 className="text-2xl font-bold mb-6">Create Session for Teste 1 Pratico in Fundamentos de Programação</h1>
 
         {formError && (
