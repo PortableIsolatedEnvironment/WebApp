@@ -39,6 +39,7 @@ export default function SessionClientPage() {
 
   const formatRemainingTime = (startTimeStr, sessionUser) => {
     if (!startTimeStr || startTimeStr === "null") return "Not started";
+    if(sessionUser.start_time && sessionUser.end_time) return "Completed";
     
     try {
       const startTime = new Date(startTimeStr);
@@ -198,6 +199,17 @@ export default function SessionClientPage() {
   const handleSendSessionEnd = async () => {
     try {
       await sessionService.endSession(course_id, exam_id, session_id);
+
+      setSession(prevSession => ({
+        ...prevSession,
+        is_ended: true
+      }));
+
+      const refreshedSession = await sessionService.getSession(course_id, exam_id, session_id);
+      console.log('refreshedSession:', refreshedSession);
+      if(refreshedSession) {
+        setSession(refreshedSession);
+      }
       toast.success("Broadcast ended successfully");
     } catch (error) {
       toast.error(`Failed to end broadcast: ${error.message || "Unknown error"}`);
@@ -379,7 +391,7 @@ export default function SessionClientPage() {
             id="end-button"
             className="bg-[#993333] hover:bg-[#7A2929]"
             onClick={handleSendSessionEnd}
-            disabled={!session?.is_started}
+            disabled={!session?.is_started || session?.is_ended}
           >
             End Session
           </Button>
@@ -473,7 +485,7 @@ export default function SessionClientPage() {
                   )}
                   </TableCell>
                   <TableCell>{formatDateTime(sessionUser.end_time)}</TableCell>
-                  <TableCell>{sessionUser.end_time ? "Completed" : "Connected"}</TableCell>
+                  <TableCell>{!sessionUser.start_time ? "Not started" : sessionUser.end_time ? "Completed" : "In progress"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-4">
                       <Button 

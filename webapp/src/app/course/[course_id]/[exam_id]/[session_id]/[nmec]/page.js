@@ -71,7 +71,7 @@ export default function MonitoringPage() {
         const remainingMs = expectedEndTime - now;
         
         if (remainingMs <= 0) {
-          setRemainingTime("Time's up!");
+          setRemainingTime("Completed");
           return;
         }
   
