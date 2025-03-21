@@ -2,10 +2,12 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 
 const BackButton = () => {
     const router = useRouter();
     const pathname = usePathname();
+    const t = useTranslations();
 
     const handleBack = () => {
         const pathParts = pathname.split('/').filter(Boolean);
@@ -36,7 +38,7 @@ const BackButton = () => {
 
     return (
         <Button type="button" onClick={handleBack}>
-            Back
+            {t('Back')}
         </Button>
     );
 };

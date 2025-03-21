@@ -1,10 +1,10 @@
-import Navbar from "../components/navbar"
-import CourseCard from "../components/course-card"
-import Link from "next/link"
-import CoursesData from "@/data/courses.json"
+import CourseCard from "@/components/course-card"
 import { courseService } from "@/api/services/courseService"
+import { getTranslations } from "next-intl/server";
+import { Link } from '@/i18n/navigation';
 
 export default async function CoursesPage() {
+  const t = await getTranslations();
 
   let courses = [];
 
@@ -17,22 +17,16 @@ export default async function CoursesPage() {
   
   return (
     <div className="min-h-screen bg-light-gray">
-      {/* <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> */}
-
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Select the Course</h1>
+        <h1 className="text-4xl font-bold mb-8">{t("CourseSelection")}</h1>
 
-        {/* {} ?(
-          <p className="text-center text-gray-500"> Nenhuma Unidade Curricular Encontrada.</p>
-        ):( */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-           {courses && courses.map((course, index) => (
+          {courses && courses.map((course, index) => (
             <Link key={index} href={`/course/${course.id}`}>
               <CourseCard title={course.name} description={course.id} />
             </Link>
           ))}
         </div>
-       {/* )}  */}
       </main>
     </div>
   );

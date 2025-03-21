@@ -1,9 +1,13 @@
 'use client'
-import { Search, Globe, User, LogOut } from "lucide-react"
+import { Search, User, LogOut } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import LanguageSwitcher from "./language-switcher"
+import { useTranslations } from 'next-intl'
 
 export default function Navbar({searchQuery, setSearchQuery}) { 
+  const t = useTranslations();
+  
   return (
     <nav className="bg-[#007f39] p-3 h-20">
       <div className="container mx-auto flex items-center justify-between">
@@ -24,7 +28,7 @@ export default function Navbar({searchQuery, setSearchQuery}) {
           <div className="relative max-w-2xl mx-auto">
             <input
               type="search"
-              placeholder="Search..."
+              placeholder={t('Search')}
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
               className="w-full px-6 py-3 rounded-md bg-white/90 pl-4 pr-10 text-lg"
@@ -35,11 +39,9 @@ export default function Navbar({searchQuery, setSearchQuery}) {
 
         {/* Icons */}
         <div className="flex items-center gap-4">
-          <Globe className="h-6 w-6 text-white cursor-pointer" />
-          <User className="h-6 w-6 text-white cursor-pointer" />
-          <LogOut className="h-6 w-6 text-white cursor-pointer" 
-                  // onClick={HandleLogOut}
-          />
+          <LanguageSwitcher />
+          <User className="h-6 w-6 text-white cursor-pointer" title={t('Profile')} />
+          <LogOut className="h-6 w-6 text-white cursor-pointer" title={t('Logout')} />
         </div>
       </div>
     </nav>
