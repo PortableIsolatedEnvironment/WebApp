@@ -6,8 +6,10 @@ import { useParams, useRouter } from "next/navigation";
 import { sessionService } from "@/api/services/sessionService";
 import { userService } from "@/api/services/userService";
 import { toast, Toaster } from "sonner";
+import { useTranslations } from 'next-intl';
 
 export default function MonitoringPage() {
+  const t = useTranslations();
   const [userData, setUserData] = useState(null);
   const [sessionUser, setSessionUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,7 +188,7 @@ export default function MonitoringPage() {
   };
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading user data...</div>;
+    return <div className="min-h-screen flex items-center justify-center">{t('LoadingUserData')}...</div>;
   }
 
   if (error) {
@@ -200,11 +202,11 @@ export default function MonitoringPage() {
 
    // Format the session status
    const getStatusDisplay = () => {
-    if (!sessionUser) return "Unknown";
-    if (sessionUser.end_time) return "Completed";
-    if (sessionUser.start_time) return "In Progress";
-    if (!sessionUser.start_time && !sessionUser.end_time) return "Not Started";
-    return "Connected";
+    if (!sessionUser) return t('Unknown');
+    if (sessionUser.end_time) return t('Completed');
+    if (sessionUser.start_time) return t('InProgress');
+    if (!sessionUser.start_time && !sessionUser.end_time) return t('NotStarted');
+    return t('Connected');
   };
   
       return (
@@ -213,15 +215,15 @@ export default function MonitoringPage() {
           <main className="p-8">
             {/* Student Info */}
             <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h1 className="text-2xl font-bold mb-4">Student Monitoring</h1>
+          <h1 className="text-2xl font-bold mb-4">{t('StudentMonitoring')}</h1>
             {/* User Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-lg mb-2"><span className="font-semibold">Name:</span> {userData?.name || "Unknown"}</p>
-                <p className="text-lg mb-2"><span className="font-semibold">NºMec:</span> {nmec}</p>
-                <p className="text-lg mb-2"><span className="font-semibold">Email:</span> {userData?.email || "Unknown"}</p>
+                <p className="text-lg mb-2"><span className="font-semibold">{t('Name')}:</span> {userData?.name || t('Unknown')}</p>
+                <p className="text-lg mb-2"><span className="font-semibold">{t('NMEC')}:</span> {nmec}</p>
+                <p className="text-lg mb-2"><span className="font-semibold">{t('Email')}:</span> {userData?.email || t('Unknown')}</p>
                 <p className="text-lg mb-2">
-                  <span className="font-semibold">Status:</span> 
+                  <span className="font-semibold">{t('Status')}:</span> 
                   <span className={`ml-2 px-2 py-0.5 rounded ${
                     sessionUser?.end_time ? "bg-gray-200" : "bg-green-100"
                   }`}>
@@ -233,22 +235,22 @@ export default function MonitoringPage() {
               <div>
                 {sessionUser?.start_time && (
                   <p className="text-lg mb-2">
-                    <span className="font-semibold">Started:</span> {new Date(sessionUser.start_time).toLocaleTimeString()}
+                    <span className="font-semibold">{t('Started')}:</span> {new Date(sessionUser.start_time).toLocaleTimeString()}
                   </p>
                 )}
                 
                 {sessionUser?.end_time ? (
                   <p className="text-lg mb-2">
-                    <span className="font-semibold">Ended:</span> {new Date(sessionUser.end_time).toLocaleTimeString()}
+                    <span className="font-semibold">{t('Ended')}:</span> {new Date(sessionUser.end_time).toLocaleTimeString()}
                   </p>
                 ) : remainingTime !== null ? (
                   <p className="text-lg mb-2">
-                    <span className="font-semibold">Time Remaining:</span> {remainingTime} minutes
+                    <span className="font-semibold">{t('TimeRemaining')}:</span> {remainingTime} {t('minutes')}
                   </p>
                 ) : null}
                 
                 <p className="text-lg mb-2">
-                  <span className="font-semibold">Device ID:</span> {sessionUser?.device_id || "Unknown"}
+                  <span className="font-semibold">{t('DeviceID')}:</span> {sessionUser?.device_id || t('Unknown')}
                 </p>
               </div>
             </div>
@@ -258,7 +260,7 @@ export default function MonitoringPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Time extension */}
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Time Management</h2>
+                  <h2 className="text-xl font-semibold mb-4">{t('TimeManagement')}</h2>
                   <div className="flex items-center space-x-2 mb-4">
                     <input 
                       type="number"
@@ -267,18 +269,18 @@ export default function MonitoringPage() {
                       onChange={(e) => setExtensionMinutes(Math.max(1, parseInt(e.target.value) || 1))}
                       className="w-16 border p-2 rounded text-center"
                     />
-                    <span className="mr-2">minutes</span>
+                    <span className="mr-2">{t('minutes')}</span>
                     <Button 
                       className="bg-blue-500 hover:bg-blue-700"
                       onClick={handleAddTime}
                     >
-                      Add Time
+                      {t('AddTime')}
                     </Button>
                     <Button 
                       className="bg-gray-500 hover:bg-gray-700"
                       onClick={handleReduceTime}
                     >
-                      Reduce Time
+                      {t('ReduceTime')}
                     </Button>
                   </div>
                   {/* Control Buttons */}
@@ -288,13 +290,13 @@ export default function MonitoringPage() {
                       onClick={handleEndExam}
                       disabled={sessionUser?.end_time}
                     >
-                      End Exam for Student
+                      {t('EndExamForStudent')}
                     </Button>
                   </div>
                 </div>
                 {/* Direct messaging */}
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Send Message</h2>
+                  <h2 className="text-xl font-semibold mb-4">{t('SendMessage')}</h2>
                   <div className="flex items-center space-x-2">
                     <input 
                       type="text" 
@@ -302,13 +304,13 @@ export default function MonitoringPage() {
                       onChange={(e) => setBroadcastMessage(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                       className="flex-1 border p-2 rounded"
-                      placeholder="Message to student..."
+                      placeholder={t('MessageToStudent')}
                     />
                     <Button 
                       className="bg-green-600 hover:bg-green-800"
                       onClick={handleSendMessage}
                     >
-                      Send
+                      {t('Send')}
                     </Button>
                   </div>
                 </div>
@@ -319,9 +321,9 @@ export default function MonitoringPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <div className="bg-[#1E1E1E] rounded-lg p-4 h-[700px] overflow-auto">
                   <pre className="text-green-400 font-mono text-sm">
-                    {`// Code editor content
+                    {`// ${t('CodeEditorContent')}
                         function example() {
-                          // Your code here
+                          // ${t('YourCodeHere')}
                         }`}
                   </pre>
                 </div>
@@ -342,7 +344,7 @@ export default function MonitoringPage() {
               <BackButton />
             </div>
           </main>
-          <Toaster />
+          <Toaster richColors />
         </div>
       );
 }

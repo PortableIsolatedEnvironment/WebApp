@@ -8,8 +8,11 @@ import { sessionService } from "@/api/services/sessionService";
 import { userService } from "@/api/services/userService";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
+import { StartSessionDialog, EndSessionDialog } from "@/components/session-dialogs";
+import { useTranslations } from 'next-intl';
 
 export default function SessionClientPage() {
+  const t = useTranslations();
   const [session, setSession] = useState(null);
   const [sessionUsers, setSessionUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +23,10 @@ export default function SessionClientPage() {
   const params = useParams();
   const router = useRouter();
   const { course_id, exam_id, session_id } = params;
+  const [showJoinCode, setShowJoinCode] = useState(false);
+  const [showStartDialog, setShowStartDialog] = useState(false);
+  const [showEndDialog, setShowEndDialog] = useState(false);
+  
 
   const pollingInterval = 5000; // 5 seconds
 
@@ -173,7 +180,7 @@ export default function SessionClientPage() {
   }
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center">{t('Loading')}...</div>;
   }
 
   if (!session) {
@@ -181,18 +188,41 @@ export default function SessionClientPage() {
     return null; // Add this return to prevent rendering after redirect
   }
 
+  const handleStartButtonClick = () => {
+    setShowStartDialog(true);
+  };
+  
+  const handleEndButtonClick = () => {
+    setShowEndDialog(true);
+  };
+  
+  const handleStartConfirm = () => {
+    setShowStartDialog(false);
+    handleSendSessionStart();
+  };
+  
+  const handleEndConfirm = () => {
+    setShowEndDialog(false);
+    handleSendSessionEnd();
+  };
+
   const handleSendSessionStart = async () => {
     try {
-      await sessionService.startSession(course_id, exam_id, session_id);
+      const startButton = document.getElementById('start-button');
+      if (startButton) startButton.disabled = true;
+      const result = await sessionService.startSession(course_id, exam_id, session_id);
 
       setSession(prevSession => ({
         ...prevSession,
         is_started: true
       }));
 
-      toast.success("Broadcast started successfully");
+      toast.success("Exam started successfully");
     } catch (error) {
-      toast.error(`Failed to start broadcast: ${error.message || "Unknown error"}`);
+      toast.error(`Failed to start exam: ${error.message || "Unknown error"}`);
+    } finally {
+      const startButton = document.getElementById('start-button');
+      if (startButton) startButton.disabled = false;
     }
   };
 
@@ -210,9 +240,9 @@ export default function SessionClientPage() {
       if(refreshedSession) {
         setSession(refreshedSession);
       }
-      toast.success("Broadcast ended successfully");
+      toast.success("Exam ended successfully");
     } catch (error) {
-      toast.error(`Failed to end broadcast: ${error.message || "Unknown error"}`);
+      toast.error(`Failed to end exam: ${error.message || "Unknown error"}`);
     }
   };
 
@@ -244,12 +274,12 @@ export default function SessionClientPage() {
 
       // Dismiss loading toast and show success
       toast.dismiss(toastId);
-      toast.success("Broadcast sent successfully");
+      toast.success("Message sent successfully");
       
       // Clear the input field after successful broadcast
       setBroadcastMessage("");
     } catch (error) {
-      toast.error(`Failed to send broadcast: ${error.message || "Unknown error"}`);
+      toast.error(`Failed to send message: ${error.message || "Unknown error"}`);
     } finally {
       const sendButton = document.getElementById('send-button');
       if (sendButton) sendButton.disabled = false;
@@ -370,37 +400,67 @@ export default function SessionClientPage() {
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">{session?.name}</h1>
         
+
         {/* Generate Code Section */}
         <div className="flex flex-col items-center justify-center mb-12 mt-8">
           <div className="flex flex-col items-center gap-6 p-8 rounded-lg bg-gray-50 w-full max-w-2xl">
-            <div className="text-4xl font-bold ">{session?.join_code}</div>
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-sm text-gray-500">{t('JoinCode')}:</span>
+              <div className="flex items-center gap-3">
+                <div className={`text-4xl font-bold transition-all duration-200 ${!showJoinCode ? "blur-md select-none" : ""}`}>
+                  {showJoinCode ? session?.join_code : "••••••"}
+                </div>
+                <button 
+                  onClick={() => setShowJoinCode(!showJoinCode)}
+                  className="flex items-center justify-center p-2 rounded-full hover:bg-gray-200 transition-colors"
+                  aria-label={showJoinCode ? t('HideJoinCode') : t('ShowJoinCode')}
+                >
+                  {showJoinCode ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                      <line x1="2" y1="2" x2="22" y2="22"></line>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {showJoinCode ? t('ClickEyeToHide') : t('ClickEyeToReveal')}
+              </p>
+            </div>
           </div>
-        </div> 
+        </div>
 
         {/* Session Actions */}
         <div className="flex justify-center gap-4 mb-8">
           <Button 
             id="start-button"
             className="bg-[#5BA87A] hover:bg-[#4A8B65]"
-            onClick={handleSendSessionStart}
+            onClick={handleStartButtonClick}
             disabled={session?.is_started}
           >
-            Start Session
+            {t('StartSession')}
           </Button>
           <Button 
             id="end-button"
             className="bg-[#993333] hover:bg-[#7A2929]"
-            onClick={handleSendSessionEnd}
+            onClick={handleEndButtonClick}
             disabled={!session?.is_started || session?.is_ended}
           >
-            End Session
+            {t('EndSession')}
           </Button>
         </div>
       
         {/* Broadcast Message */}
         <div className="bg-gray-100 p-3 rounded-lg mb-8">
           <div className="flex items-center gap-2">
-            <span className="font-medium">Broadcast Message:</span>
+            <span className="font-medium">{t('BroadcastMessage')}:</span>
             <input 
               type="text" 
               value={broadcastMessage} 
@@ -411,28 +471,28 @@ export default function SessionClientPage() {
                 }
               }}
               className="flex-grow border p-1 rounded"
-              placeholder="Enter message to broadcast to all students..."
+              placeholder={t('EnterMessageBroadcast')}
             />
             <Button 
               id="send-button"
               className="bg-[#5BA87A] hover:bg-[#4A8B65] whitespace-nowrap"
               onClick={handleSendBroadcastMessage}
             >
-              Send
+              {t('Send')}
             </Button>
             <Button 
               id="clear-button"
               className="bg-[#993333] hover:bg-[#7A2929] whitespace-nowrap"
               onClick={handleClearBroadcast}
             >
-              Clear
+              {t('Clear')}
             </Button>
           </div>
         </div>
         {/* Extend Time for All Users */}
         <div className="bg-gray-100 p-3 rounded-lg mb-8">
           <div className="flex items-center gap-2">
-            <span className="font-medium">Extend Time for All Users:</span>
+            <span className="font-medium">{t('ExtendTimeAllUsers')}:</span>
             <input 
               type="number"
               min="1"
@@ -441,14 +501,14 @@ export default function SessionClientPage() {
               className="w-16 border p-1 rounded text-center"
               placeholder="5"
             />
-            <span className="mr-2">minutes</span>
+            <span className="mr-2">{t('minutes')}</span>
             <Button 
               id="extend-all-button"
               className="bg-blue-500 hover:bg-blue-700 whitespace-nowrap"
               onClick={handleExtendTimeAll}
               disabled={sessionUsers.length === 0}
             >
-              Extend Time for All
+              {t('ExtendTimeForAll')}
             </Button>
           </div>
         </div>
@@ -456,13 +516,13 @@ export default function SessionClientPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">Student NMEC</TableHead>
-              <TableHead>Student Name</TableHead>
-              <TableHead>Device ID</TableHead>
-              <TableHead>Start Time</TableHead>
-              <TableHead>Remaining Time</TableHead>
-              <TableHead>End Time</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="w-16">{t('StudentNMEC')}</TableHead>
+              <TableHead>{t('StudentName')}</TableHead>
+              <TableHead>{t('DeviceID')}</TableHead>
+              <TableHead>{t('StartTime')}</TableHead>
+              <TableHead>{t('RemainingTime')}</TableHead>
+              <TableHead>{t('EndTime')}</TableHead>
+              <TableHead>{t('Status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -470,7 +530,7 @@ export default function SessionClientPage() {
               sessionUsers.map((sessionUser) => (
                 <TableRow key={sessionUser.id}>
                   <TableCell>{sessionUser.user_nmec}</TableCell>
-                  <TableCell>{sessionUser.user?.name || "Unknown User"}</TableCell>
+                  <TableCell>{sessionUser.user?.name || t('UnknownUser')}</TableCell>
                   <TableCell>{sessionUser.device_id}</TableCell>
                   <TableCell>{formatDateTime(sessionUser.start_time)}</TableCell>
                   <TableCell>
@@ -479,23 +539,23 @@ export default function SessionClientPage() {
                       {elapsedTimes[sessionUser.id] || formatRemainingTime(sessionUser.start_time, sessionUser)}
                     </span>
                   ) : sessionUser.end_time ? (
-                    "Completed"
+                    t('Completed')
                   ) : (
-                    "Not started"
+                    t('NotStarted')
                   )}
                   </TableCell>
                   <TableCell>{formatDateTime(sessionUser.end_time)}</TableCell>
-                  <TableCell>{!sessionUser.start_time ? "Not started" : sessionUser.end_time ? "Completed" : "In progress"}</TableCell>
+                  <TableCell>{!sessionUser.start_time ? t('NotStarted') : sessionUser.end_time ? t('Completed') : t('InProgress')}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-4">
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={() => handleViewUserDetails(sessionUser)}
-                        title="View User details"
+                        title={t('ViewUserDetails')}
                         className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                         >
-                        View User
+                        {t('ViewUser')}
                       </Button>
                     </div>
                   </TableCell>
@@ -504,7 +564,7 @@ export default function SessionClientPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  No users entered this session yet.
+                  {t('NoUsersInSession')}
                 </TableCell>
               </TableRow>
             )}
@@ -518,18 +578,29 @@ export default function SessionClientPage() {
             id="fetch-button"
             onClick={handleFetchSubmissions}
           >
-            Fetch Submissions
+            {t('FetchSubmissions')}
           </Button>
           <Button 
             type="button"
             id="download-button"
             onClick={handleDownloadSubmissions}
           >
-            Download Submissions
+            {t('DownloadSubmissions')}
           </Button>
         </div>
+          <StartSessionDialog 
+            open={showStartDialog} 
+            onOpenChange={setShowStartDialog} 
+            onConfirm={handleStartConfirm} 
+          />
+          
+          <EndSessionDialog 
+            open={showEndDialog} 
+            onOpenChange={setShowEndDialog}
+            onConfirm={handleEndConfirm}
+          />
       </main>
-      <Toaster />
+      <Toaster richColors />
     </div>
   );
 }

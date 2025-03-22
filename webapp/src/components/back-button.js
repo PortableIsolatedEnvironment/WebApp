@@ -2,13 +2,16 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 
 const BackButton = () => {
     const router = useRouter();
     const pathname = usePathname();
+    const t = useTranslations();
 
     const handleBack = () => {
-        const pathParts = pathname.split('/').filter(Boolean);
+        const localeStripped = pathname.replace(/\/[a-z]{2}/, '');
+        const pathParts = localeStripped.split('/').filter(Boolean);
         
         if (pathParts.length <= 1) {
             router.push('/');
@@ -26,17 +29,17 @@ const BackButton = () => {
                 if (pathParts[4] === 'edit_session' || pathParts[4] === 'create_session') {
                     router.push(`/course/${pathParts[1]}/${pathParts[2]}`);
                 } else {
-                    router.push(pathname.split('/').slice(0, -1).join('/'));
+                    router.push(localeStripped.split('/').slice(0, -1).join('/'));
                 }
             }
         } else {
-            router.push(pathname.split('/').slice(0, -1).join('/'));
+            router.push(localeStripped.split('/').slice(0, -1).join('/'));
         }
     };
 
     return (
         <Button type="button" onClick={handleBack}>
-            Back
+            {t('Back')}
         </Button>
     );
 };

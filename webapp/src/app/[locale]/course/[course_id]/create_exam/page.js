@@ -21,6 +21,7 @@ import { sessionService } from "@/api/services/sessionService"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert } from "@/components/ui/alert"
 import { toast, Toaster } from "sonner"
+import { useTranslations } from "next-intl"
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -45,7 +46,8 @@ export default function CreateExamForm() {
   const [formError, setFormError] = useState("")
   const [createSessionEnabled, setCreateSessionEnabled] = useState(false)
   const [activeTab, setActiveTab] = useState("files")
-  
+  const t = useTranslations();
+
   const params = useParams()
   const router = useRouter()
   const { course_id } = params
@@ -90,7 +92,6 @@ export default function CreateExamForm() {
   }
 
   const validateFormBeforeSubmit = (values) => {
-    // Only validate materials if the create session option is enabled
     if (values.createSession) {
       const hasFiles = files.length > 0
       const hasLink = values.examLink && values.examLink.trim() !== ""
@@ -99,8 +100,6 @@ export default function CreateExamForm() {
         setFormError("You cannot provide both files and an exam link. Please choose one option.")
         return false
       }
-      
-      // We don't require materials in exam creation, so no need to check for neither
     }
     
     return true
@@ -180,7 +179,7 @@ export default function CreateExamForm() {
           }
         }
 
-        toast.success("Exam created successfully!")
+        toast.success(t("SuccessExamToast"))
         router.push(`/course/${course_id}`)
       } catch (apiError) {
         throw new Error(`API error: ${apiError.message}`)
@@ -196,7 +195,7 @@ export default function CreateExamForm() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-light-gray">
-      <h1 className="text-2xl font-bold mb-6">Create New Exam</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("CreateExamTitle")}</h1>
 
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -220,9 +219,9 @@ export default function CreateExamForm() {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Exam Title</FormLabel>
+                <FormLabel>{t("ExamFormTitle")}</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter exam name" {...field} />
+                  <Input placeholder={t("ExamFormTitlePlaceholder")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -236,9 +235,9 @@ export default function CreateExamForm() {
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base">Create Session Automatically</FormLabel>
+                  <FormLabel className="text-base">{t("CreateAutomaticSession")}</FormLabel>
                   <p className="text-sm text-muted-foreground">
-                    Enable to create an exam session at the same time
+                    {t("CreateAutomaticSessionDescription")}
                   </p>
                 </div>
                 <FormControl>
@@ -257,7 +256,7 @@ export default function CreateExamForm() {
           {/* Session Fields - Only shown when createSession is enabled */}
           {createSessionEnabled && (
             <div className="bg-muted/50 p-4 rounded-lg space-y-6">
-              <h2 className="text-lg font-medium">Session Details</h2>
+              <h2 className="text-lg font-medium">{t("SessionDetails")}</h2>
               
               {/* Session Title */}
               <FormField
@@ -265,10 +264,10 @@ export default function CreateExamForm() {
                 name="sessionTitle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Session Title (optional)</FormLabel>
+                    <FormLabel>{t("SessionTitle")}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Leave blank to use exam title" 
+                        placeholder={t("SessionTitlePlaceholder")} 
                         {...field} 
                       />
                     </FormControl>
@@ -284,7 +283,7 @@ export default function CreateExamForm() {
                   name="date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date</FormLabel>
+                      <FormLabel>{t("Date")}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -292,7 +291,7 @@ export default function CreateExamForm() {
                               variant={"outline"}
                               className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
                             >
-                              {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
+                              {field.value ? format(field.value, "yyyy-MM-dd") : <span>{t("DatePlaceholder")}</span>}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -312,9 +311,9 @@ export default function CreateExamForm() {
                   name="room"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Room</FormLabel>
+                      <FormLabel>{t("Room")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Room Name" {...field} />
+                        <Input placeholder={t("RoomPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -327,7 +326,7 @@ export default function CreateExamForm() {
                   name="duration"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Duration (hours:minutes)</FormLabel>
+                      <FormLabel>{t("Duration")}</FormLabel>
                       <FormControl>
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
@@ -360,7 +359,7 @@ export default function CreateExamForm() {
                             />
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            Total duration (e.g., 02:00 for 2 hours)
+                            {t("DurationHelper")}
                           </span>
                         </div>
                       </FormControl>
@@ -372,12 +371,12 @@ export default function CreateExamForm() {
 
               {/* Materials Section - Tabs for Files/Link */}
               <div className="border rounded-md p-4">
-                <h3 className="font-medium mb-4">Exam Materials</h3>
+                <h3 className="font-medium mb-4">{t("ExamMaterials")}</h3>
                 
                 <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="files">Upload Files</TabsTrigger>
-                    <TabsTrigger value="link">Use External Link</TabsTrigger>
+                    <TabsTrigger value="files">{t("UploadFiles")}</TabsTrigger>
+                    <TabsTrigger value="link">{t("UseExternalLink")}</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="files" className="mt-0">
@@ -389,21 +388,21 @@ export default function CreateExamForm() {
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Upload className="h-10 w-10 text-muted-foreground" />
                         <div className="flex flex-col items-center">
-                          <p className="text-sm font-medium">Attach Files</p>
-                          <p className="text-xs text-muted-foreground">Click to upload or drag and drop</p>
-                          <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or other document files</p>
+                          <p className="text-sm font-medium">{t("AttachFiles")}</p>
+                          <p className="text-xs text-muted-foreground">{t("DropFilesInstructions")}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("AcceptedFileTypes")}</p>
                         </div>
                         <Input type="file" className="hidden" id="file-upload" multiple onChange={handleFileChange} />
                         <label
                           htmlFor="file-upload"
                           className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                         >
-                          Select Files
+                          {t("SelectFiles")}
                         </label>
                       </div>
                       {files.length > 0 && (
                         <div className="mt-4">
-                          <p className="text-sm font-medium">Selected Files:</p>
+                          <p className="text-sm font-medium">{t("SelectedFiles")}</p>
                           <ul className="text-sm text-muted-foreground mt-1">
                             {files.map((file, index) => (
                               <li key={index} className="flex justify-between items-center">
@@ -430,19 +429,19 @@ export default function CreateExamForm() {
                       name="examLink"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>External Exam Link</FormLabel>
+                          <FormLabel>{t("ExternalExamLink")}</FormLabel>
                           <FormControl>
                             <div className="flex items-center">
                               <Link className="mr-2 h-4 w-4 text-muted-foreground" />
                               <Input 
-                                placeholder="https://example.com/exam" 
+                                placeholder={t("ExamLinkPlaceholder")} 
                                 {...field}
                                 className="flex-1"
                               />
                             </div>
                           </FormControl>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Enter a valid URL starting with http:// or https://
+                            {t("ExamLinkHelper")}
                           </p>
                           <FormMessage />
                         </FormItem>
@@ -457,7 +456,7 @@ export default function CreateExamForm() {
           <div className="flex justify-between">
             <BackButton />
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Exam"}
+              {isSubmitting ? t("Creating") : t("CreateExam")}
             </Button>
           </div>
         </form>

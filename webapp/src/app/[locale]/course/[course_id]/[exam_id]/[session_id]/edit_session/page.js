@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { CalendarIcon, Upload, Link, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { CalendarIcon, Upload, Link as LinkIcon, AlertCircle } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -9,15 +9,17 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Calendar } from "@/components/ui/calendar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import BackButton from "@/components/back-button"
 import { sessionService } from "@/api/services/sessionService"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert } from "@/components/ui/alert"
-import { toast } from "sonner"
+import { toast, Toaster } from "sonner"
+import { useTranslations } from 'next-intl'
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -39,17 +41,20 @@ const formSchema = z.object({
     .or(z.literal("")),
 })
 
-export default function CreateSessionForm() {
+export default function EditSessionForm() {
+    const t = useTranslations();
     const [files, setFiles] = useState([])
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [sessionData, setSessionData] = useState(null)
     const [activeTab, setActiveTab] = useState("files")
     const [formError, setFormError] = useState("")
     
     const params = useParams()
     const router = useRouter()
-    const { course_id, exam_id } = params
-  
+    const { course_id, exam_id, session_id } = params
+
     const handleDragOver = (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -60,7 +65,6 @@ export default function CreateSessionForm() {
       e.stopPropagation()
       
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        // Convert FileList to array and update state
         const droppedFiles = Array.from(e.dataTransfer.files)
         setFiles(prevFiles => [...prevFiles, ...droppedFiles])
         e.dataTransfer.clearData()
@@ -69,7 +73,6 @@ export default function CreateSessionForm() {
 
     const handleFileChange = (e) => {
       if (e.target.files && e.target.files.length > 0) {
-        // Convert FileList to array and update state
         const selectedFiles = Array.from(e.target.files)
         setFiles(prevFiles => [...prevFiles, ...selectedFiles])
       }
@@ -78,7 +81,7 @@ export default function CreateSessionForm() {
     const handleRemoveFile = (indexToRemove) => {
       setFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove))
     }
-
+  
     const form = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -88,82 +91,176 @@ export default function CreateSessionForm() {
             examLink: "",
         },
     })
-  
+
+    useEffect(() => {
+        async function fetchSessionData() {
+            try {
+                setIsLoading(true)
+                const data = await sessionService.getSession(course_id, exam_id, session_id)
+                setSessionData(data)
+                
+                if (data.exam_link && data.exam_link.trim() !== '') {
+                    setActiveTab("link")
+                } else {
+                    setActiveTab("files")
+                }
+
+                let formattedDuration = "02:00" // Default
+                if (data.duration) {
+                    const totalSeconds = parseInt(data.duration)
+                    
+                    if (!isNaN(totalSeconds)) {
+                        const hours = Math.floor(totalSeconds / 3600)
+                        const minutes = Math.floor((totalSeconds % 3600) / 60)
+                        formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+                    }
+                }
+
+              let displayExamLink = ""
+              if (data.exam_link && data.exam_link.includes('|')) {
+                  displayExamLink = data.exam_link.split('|')[0];
+              } else if (data.exam_link) {
+                  displayExamLink = data.exam_link;
+              }
+              
+              form.reset({
+                  title: data.name,
+                  room: data.room,
+                  date: new Date(data.date),
+                  duration: formattedDuration,
+                  examLink: displayExamLink,
+              })
+                
+            setIsLoading(false)
+            } catch (err) {
+                console.error("Failed to fetch session data:", err)
+                setError("Failed to load session data. Please try again.")
+                setIsLoading(false)
+            }
+        }
+        
+        fetchSessionData()
+    }, [course_id, exam_id, session_id, form])
+    
+    const validateFormBeforeSubmit = (values) => {
+      const hasFiles = files.length > 0
+      const hasLink = values.examLink && values.examLink.trim() !== ""
+      const hasExistingMaterials = sessionData?.encrypted_exam_file || sessionData?.exam_link
+      
+      if (hasFiles && hasLink) {
+        setFormError("You cannot provide both files and an exam link. Please choose one option.")
+        return false
+      }
+      
+      if (!hasExistingMaterials && !hasFiles && !hasLink) {
+        setFormError("Please provide either exam files or an external link.")
+        return false
+      }
+      
+      return true
+    }
+
     async function onSubmit(values) {
       try {
-        setIsSubmitting(true)
-        setError(null)
         setFormError("")
+        setError(null)
+        
+        if (!validateFormBeforeSubmit(values)) {
+          return
+        }
+        
+        setIsSubmitting(true)
         
         const formattedDate = format(values.date, "yyyy-MM-dd")
         
-        // Validate that either files OR link is provided, but not both
-        const hasFiles = files.length > 0
-        const hasLink = values.examLink && values.examLink.trim() !== ""
+        let durationInSeconds = 7200 // Default 2 hours
         
-        if (hasFiles && hasLink) {
-          setFormError("You cannot provide both files and an exam link. Please choose one option.")
-          return
-        }
-        
-        if (!hasFiles && !hasLink) {
-          setFormError("Please provide either exam files or an external link.")
-          return
-        }
-        
-        // Basic session data (without files or link)
-        const sessionData = {
-          exam_id: Number(exam_id),
-          course_id: course_id,
-          name: values.title,
-          date: formattedDate,
-          duration: values.duration.split(":").reduce((acc, time, index) => acc + parseInt(time) * (index === 0 ? 3600 : 60), 0),
-          room: values.room,
-        }
-
-        try {
-          // First create the session
-          const sessionResponse = await sessionService.createSession(course_id, exam_id, sessionData)
-          const session_id = sessionResponse.id
-          
-          // Then upload either files or link
-          if (hasFiles) {
-            // For file uploads
-            const formData = new FormData()
-            
-            // Add each file
-            for (const file of files) {
-              formData.append('files', file)
-            }
-            
-            await sessionService.uploadFile(course_id, exam_id, session_id, formData)
-          } else if (hasLink) {
-            // For exam link
-            const formData = new FormData()
-            formData.append('exam_link', values.examLink)
-            
-            await sessionService.uploadFile(course_id, exam_id, session_id, formData)
+        if (typeof values.duration === "string" && values.duration.includes(":")) {
+          try {
+            const [hours, minutes] = values.duration.split(":")
+            durationInSeconds = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60)
+            console.log("Duration calculated:", values.duration, "->", durationInSeconds, "seconds")
+          } catch (err) {
+            console.error("Failed to parse duration:", err)
           }
-          
-          toast.success("Session created successfully!")
-          router.push(`/course/${course_id}/${exam_id}`)
-        } catch (apiError) {
-          throw new Error(`API error: ${apiError.message}`)
+        }
+    
+        const hasNewFiles = files.length > 0
+        const hasNewLink = values.examLink && values.examLink.trim() !== ""
+        
+        const formData = new FormData()
+        
+        formData.append('name', values.title)
+        formData.append('date', formattedDate)
+        formData.append('duration', String(durationInSeconds))
+        formData.append('room', values.room)
+        formData.append('exam_id', Number(exam_id))
+        formData.append('course_id', course_id)
+        
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`)
         }
         
+        if (hasNewFiles) {
+          for (const file of files) {
+            formData.append('files', file)
+          }
+        } else if (hasNewLink) {
+          formData.append('exam_link', values.examLink)
+        }
+        
+        await sessionService.updateSessionWithFiles(course_id, exam_id, session_id, formData)
+        
+        toast.success("Session updated successfully!")
+        router.push(`/course/${course_id}/${exam_id}`)
       } catch (err) {
-        setError(err.message || "An error occurred while creating the session")
-        toast.error(err.message || "An error occurred while creating the session")
+        setError(err.message || "An error occurred while updating the session")
+        toast.error(err.message || "An error occurred while updating the session")
         console.error(err)
       } finally {
         setIsSubmitting(false)
       }
     }
-  
+
+    if (isLoading) {
+      return (
+        <div className="max-w-4xl mx-auto p-6">
+          <h1 className="text-2xl font-bold mb-6">{t('EditSession')}</h1>
+          <div className="space-y-6">
+            <Skeleton className="h-10 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+            <Skeleton className="h-40 w-full" />
+            <div className="flex justify-between">
+              <Skeleton className="h-10 w-20" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (error && !sessionData) {
+      return (
+        <div className="max-w-4xl mx-auto p-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </Alert>
+          <div className="mt-4">
+            <BackButton />
+          </div>
+        </div>
+      )
+    }
+    
     return (
       <div className="max-w-4xl mx-auto p-6 bg-light-gray">
-        <h1 className="text-2xl font-bold mb-6">Create Session for Teste 1 Pratico in Fundamentos de Programação</h1>
-
+        <h1 className="text-2xl font-bold mb-6">{t('EditSession')}</h1>
+        
         {formError && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -178,9 +275,9 @@ export default function CreateSessionForm() {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>{t('SessionTitle')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Session Title" {...field} />
+                    <Input placeholder={t('SessionTitlePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -192,15 +289,16 @@ export default function CreateSessionForm() {
                 control={form.control}
                 name="date"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t('Date')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                    variant={"outline"}
-                    className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")} >
-                            {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
+                            variant={"outline"}
+                            className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                          >
+                            {field.value ? format(field.value, "yyyy-MM-dd") : <span>{t('DatePlaceholder')}</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -213,25 +311,27 @@ export default function CreateSessionForm() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="room"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Room</FormLabel>
+                    <FormLabel>{t('Room')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Room Name" {...field} />
+                      <Input placeholder={t('RoomPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="duration"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration</FormLabel>
+                    <FormLabel>{t('Duration')}</FormLabel>
                     <FormControl>
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
@@ -239,11 +339,12 @@ export default function CreateSessionForm() {
                             type="number" 
                             min="0" 
                             max="10" 
-                            placeholder="Hours" 
-                            value={field.value.split(':')[0] || ""}
+                            placeholder={t('Hours')} 
+                            value={(field.value && field.value.includes(':')) ? field.value.split(':')[0] : "00"}
                             onChange={(e) => {
                               const hours = e.target.value;
-                              const minutes = field.value.split(':')[1] || "00";
+                              const minutes = (field.value && field.value.includes(':')) ? 
+                                field.value.split(':')[1] || "00" : "00";
                               field.onChange(`${hours.padStart(2, '0')}:${minutes}`);
                             }}
                             className="w-20"
@@ -253,10 +354,11 @@ export default function CreateSessionForm() {
                             type="number" 
                             min="0" 
                             max="59" 
-                            placeholder="Minutes" 
-                            value={field.value.split(':')[1] || ""}
+                            placeholder={t('Minutes')} 
+                            value={(field.value && field.value.includes(':')) ? field.value.split(':')[1] : "00"}
                             onChange={(e) => {
-                              const hours = field.value.split(':')[0] || "00";
+                              const hours = (field.value && field.value.includes(':')) ? 
+                                field.value.split(':')[0] || "00" : "00";
                               const minutes = e.target.value;
                               field.onChange(`${hours}:${minutes.padStart(2, '0')}`);
                             }}
@@ -264,7 +366,7 @@ export default function CreateSessionForm() {
                           />
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Total duration (e.g., 02:00 for 2 hours)
+                          {t('DurationHelper')}
                         </span>
                       </div>
                     </FormControl>
@@ -275,12 +377,28 @@ export default function CreateSessionForm() {
             </div>
 
             <div className="border rounded-md p-4">
-              <h3 className="font-medium mb-4">Exam Materials</h3>
+              <h3 className="font-medium mb-4">{t('ExamMaterials')}</h3>
+
+              {(sessionData?.encrypted_exam_file || sessionData?.exam_link) && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm font-medium">{t('CurrentMaterials')}:</p>
+                  {sessionData?.encrypted_exam_file && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('File')}: {sessionData.encrypted_exam_file.split('/').pop()}
+                    </p>
+                  )}
+                  {sessionData?.exam_link && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('Link')}: {sessionData.exam_link.includes('|') ? sessionData.exam_link.split('|')[0] : sessionData.exam_link}
+                    </p>
+                  )}
+                </div>
+              )}
               
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="files">Upload Files</TabsTrigger>
-                  <TabsTrigger value="link">Use External Link</TabsTrigger>
+                  <TabsTrigger value="files">{t('ReplaceWithFiles')}</TabsTrigger>
+                  <TabsTrigger value="link">{t('ReplaceWithLink')}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="files" className="mt-0">
@@ -292,21 +410,21 @@ export default function CreateSessionForm() {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Upload className="h-10 w-10 text-muted-foreground" />
                       <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium">Attach Files</p>
-                        <p className="text-xs text-muted-foreground">Click to upload or drag and drop</p>
-                        <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or other document files</p>
+                        <p className="text-sm font-medium">{t('UpdateFiles')}</p>
+                        <p className="text-xs text-muted-foreground">{t('DropFilesInstructions')}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t('AcceptedFileTypes')}</p>
                       </div>
                       <Input type="file" className="hidden" id="file-upload" multiple onChange={handleFileChange} />
                       <label
                         htmlFor="file-upload"
                         className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                       >
-                        Select Files
+                        {t('SelectFiles')}
                       </label>
                     </div>
                     {files.length > 0 && (
                       <div className="mt-4">
-                        <p className="text-sm font-medium">Selected Files:</p>
+                        <p className="text-sm font-medium">{t('NewFilesToUpload')}:</p>
                         <ul className="text-sm text-muted-foreground mt-1">
                           {files.map((file, index) => (
                             <li key={index} className="flex justify-between items-center">
@@ -333,19 +451,19 @@ export default function CreateSessionForm() {
                     name="examLink"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>External Exam Link</FormLabel>
+                        <FormLabel>{t('ExternalExamLink')}</FormLabel>
                         <FormControl>
                           <div className="flex items-center">
-                            <Link className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <LinkIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                              placeholder="https://example.com/exam" 
+                              placeholder={t('ExamLinkPlaceholder')}
                               {...field}
                               className="flex-1"
                             />
                           </div>
                         </FormControl>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Enter a valid URL starting with http:// or https://
+                          {t('ExamLinkHelper')}
                         </p>
                         <FormMessage />
                       </FormItem>
@@ -358,11 +476,12 @@ export default function CreateSessionForm() {
             <div className="flex justify-between">
               <BackButton />
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Session"}
+                {isSubmitting ? t('Updating') + "..." : t('UpdateSession')}
               </Button>
             </div>
           </form>
         </Form>
+        <Toaster richColors />
       </div>
     )
 }

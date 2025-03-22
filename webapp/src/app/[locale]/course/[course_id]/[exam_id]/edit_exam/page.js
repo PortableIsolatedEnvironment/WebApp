@@ -5,13 +5,14 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useParams, useRouter } from "next/navigation"
-
+import { toast, Toaster } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Skeleton } from "@/components/ui/skeleton"
 import BackButton from "@/components/back-button"
 import { examService } from "@/api/services/examService"
+import { useTranslations } from 'next-intl'
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -20,6 +21,7 @@ const formSchema = z.object({
 })
 
 export default function EditExamForm() {
+  const t = useTranslations('common');
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
@@ -70,13 +72,14 @@ export default function EditExamForm() {
       try {
         await examService.updateExam(course_id, exam_id, updatedExam)
         
-        alert("Exam updated successfully!") // Replace with toast in the future
+        toast.success("Exam updated successfully!") // Replace with toast in the future
         router.push(`/course/${course_id}`)
       } catch (apiError) {
         throw new Error(`API error: ${apiError.message}`)
       }
     } catch (err) {
       setError(err.message || "An error occurred while updating the exam")
+      toast.error("An error occurred while updating the exam") // Replace with toast in the future
       console.error(err)
     } finally {
       setIsSubmitting(false)
@@ -101,7 +104,7 @@ export default function EditExamForm() {
   if (error && !examData) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-6">Error Loading Exam</h1>
+        <h1 className="text-2xl font-bold mb-6">{t('ErrorLoadingExam')}</h1>
         <p className="text-red-500">{error}</p>
         <div className="mt-4">
           <BackButton />
@@ -112,7 +115,7 @@ export default function EditExamForm() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-light-gray">
-      <h1 className="text-2xl font-bold mb-6">Edit Exam</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('EditExam')}</h1>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
@@ -123,9 +126,9 @@ export default function EditExamForm() {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Exam Title</FormLabel>
+                <FormLabel>{t('ExamFormTitle')}</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter exam name" {...field} />
+                  <Input placeholder={t('ExamFormTitlePlaceholder')} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -135,11 +138,12 @@ export default function EditExamForm() {
           <div className="flex justify-between">
             <BackButton />
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Updating..." : "Update Exam"}
+              {isSubmitting ? t('Updating') + "..." : t('UpdateExam')}
             </Button>
           </div>
         </form>
       </Form>
+      <Toaster richColors />
     </div>
   )
 }
