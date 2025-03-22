@@ -19,6 +19,7 @@ import { sessionService } from "@/api/services/sessionService"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert } from "@/components/ui/alert"
 import { toast, Toaster } from "sonner"
+import { useTranslations } from 'next-intl'
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -41,6 +42,7 @@ const formSchema = z.object({
 })
 
 export default function EditSessionForm() {
+    const t = useTranslations();
     const [files, setFiles] = useState([])
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
@@ -223,7 +225,7 @@ export default function EditSessionForm() {
     if (isLoading) {
       return (
         <div className="max-w-4xl mx-auto p-6">
-          <h1 className="text-2xl font-bold mb-6">Edit Session</h1>
+          <h1 className="text-2xl font-bold mb-6">{t('EditSession')}</h1>
           <div className="space-y-6">
             <Skeleton className="h-10 w-full" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -257,7 +259,7 @@ export default function EditSessionForm() {
     
     return (
       <div className="max-w-4xl mx-auto p-6 bg-light-gray">
-        <h1 className="text-2xl font-bold mb-6">Edit Session</h1>
+        <h1 className="text-2xl font-bold mb-6">{t('EditSession')}</h1>
         
         {formError && (
           <Alert variant="destructive" className="mb-6">
@@ -273,9 +275,9 @@ export default function EditSessionForm() {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>{t('SessionTitle')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Session Title" {...field} />
+                    <Input placeholder={t('SessionTitlePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -288,7 +290,7 @@ export default function EditSessionForm() {
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>{t('Date')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -296,7 +298,7 @@ export default function EditSessionForm() {
                             variant={"outline"}
                             className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
                           >
-                            {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
+                            {field.value ? format(field.value, "yyyy-MM-dd") : <span>{t('DatePlaceholder')}</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -315,9 +317,9 @@ export default function EditSessionForm() {
                 name="room"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Room</FormLabel>
+                    <FormLabel>{t('Room')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Room Name" {...field} />
+                      <Input placeholder={t('RoomPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -329,7 +331,7 @@ export default function EditSessionForm() {
                 name="duration"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration</FormLabel>
+                    <FormLabel>{t('Duration')}</FormLabel>
                     <FormControl>
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
@@ -337,7 +339,7 @@ export default function EditSessionForm() {
                             type="number" 
                             min="0" 
                             max="10" 
-                            placeholder="Hours" 
+                            placeholder={t('Hours')} 
                             value={(field.value && field.value.includes(':')) ? field.value.split(':')[0] : "00"}
                             onChange={(e) => {
                               const hours = e.target.value;
@@ -352,7 +354,7 @@ export default function EditSessionForm() {
                             type="number" 
                             min="0" 
                             max="59" 
-                            placeholder="Minutes" 
+                            placeholder={t('Minutes')} 
                             value={(field.value && field.value.includes(':')) ? field.value.split(':')[1] : "00"}
                             onChange={(e) => {
                               const hours = (field.value && field.value.includes(':')) ? 
@@ -364,7 +366,7 @@ export default function EditSessionForm() {
                           />
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Total duration (e.g., 02:00 for 2 hours)
+                          {t('DurationHelper')}
                         </span>
                       </div>
                     </FormControl>
@@ -375,19 +377,19 @@ export default function EditSessionForm() {
             </div>
 
             <div className="border rounded-md p-4">
-              <h3 className="font-medium mb-4">Exam Materials</h3>
+              <h3 className="font-medium mb-4">{t('ExamMaterials')}</h3>
 
               {(sessionData?.encrypted_exam_file || sessionData?.exam_link) && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-md">
-                  <p className="text-sm font-medium">Current materials:</p>
+                  <p className="text-sm font-medium">{t('CurrentMaterials')}:</p>
                   {sessionData?.encrypted_exam_file && (
                     <p className="text-sm text-muted-foreground">
-                      File: {sessionData.encrypted_exam_file.split('/').pop()}
+                      {t('File')}: {sessionData.encrypted_exam_file.split('/').pop()}
                     </p>
                   )}
                   {sessionData?.exam_link && (
                     <p className="text-sm text-muted-foreground">
-                      Link: {sessionData.exam_link.includes('|') ? sessionData.exam_link.split('|')[0] : sessionData.exam_link}
+                      {t('Link')}: {sessionData.exam_link.includes('|') ? sessionData.exam_link.split('|')[0] : sessionData.exam_link}
                     </p>
                   )}
                 </div>
@@ -395,8 +397,8 @@ export default function EditSessionForm() {
               
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="files">Replace with Files</TabsTrigger>
-                  <TabsTrigger value="link">Replace with Link</TabsTrigger>
+                  <TabsTrigger value="files">{t('ReplaceWithFiles')}</TabsTrigger>
+                  <TabsTrigger value="link">{t('ReplaceWithLink')}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="files" className="mt-0">
@@ -408,21 +410,21 @@ export default function EditSessionForm() {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Upload className="h-10 w-10 text-muted-foreground" />
                       <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium">Update Files</p>
-                        <p className="text-xs text-muted-foreground">Click to upload or drag and drop</p>
-                        <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or other document files</p>
+                        <p className="text-sm font-medium">{t('UpdateFiles')}</p>
+                        <p className="text-xs text-muted-foreground">{t('DropFilesInstructions')}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t('AcceptedFileTypes')}</p>
                       </div>
                       <Input type="file" className="hidden" id="file-upload" multiple onChange={handleFileChange} />
                       <label
                         htmlFor="file-upload"
                         className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                       >
-                        Select Files
+                        {t('SelectFiles')}
                       </label>
                     </div>
                     {files.length > 0 && (
                       <div className="mt-4">
-                        <p className="text-sm font-medium">New Files to Upload:</p>
+                        <p className="text-sm font-medium">{t('NewFilesToUpload')}:</p>
                         <ul className="text-sm text-muted-foreground mt-1">
                           {files.map((file, index) => (
                             <li key={index} className="flex justify-between items-center">
@@ -449,19 +451,19 @@ export default function EditSessionForm() {
                     name="examLink"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>External Exam Link</FormLabel>
+                        <FormLabel>{t('ExternalExamLink')}</FormLabel>
                         <FormControl>
                           <div className="flex items-center">
                             <LinkIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                              placeholder="https://example.com/exam" 
+                              placeholder={t('ExamLinkPlaceholder')}
                               {...field}
                               className="flex-1"
                             />
                           </div>
                         </FormControl>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Enter a valid URL starting with http:// or https://
+                          {t('ExamLinkHelper')}
                         </p>
                         <FormMessage />
                       </FormItem>
@@ -474,12 +476,12 @@ export default function EditSessionForm() {
             <div className="flex justify-between">
               <BackButton />
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Updating..." : "Update Session"}
+                {isSubmitting ? t('Updating') + "..." : t('UpdateSession')}
               </Button>
             </div>
           </form>
         </Form>
-        <Toaster />
+        <Toaster richColors />
       </div>
     )
 }

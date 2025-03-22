@@ -17,7 +17,8 @@ import BackButton from "@/components/back-button"
 import { sessionService } from "@/api/services/sessionService"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert } from "@/components/ui/alert"
-import { toast } from "sonner"
+import { toast, Toaster } from "sonner"
+import { useTranslations } from 'next-intl'
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -40,6 +41,7 @@ const formSchema = z.object({
 })
 
 export default function CreateSessionForm() {
+    const t = useTranslations();
     const [files, setFiles] = useState([])
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState(null)
@@ -152,7 +154,6 @@ export default function CreateSessionForm() {
         }
         
       } catch (err) {
-        setError(err.message || "An error occurred while creating the session")
         toast.error(err.message || "An error occurred while creating the session")
         console.error(err)
       } finally {
@@ -162,7 +163,7 @@ export default function CreateSessionForm() {
   
     return (
       <div className="max-w-4xl mx-auto p-6 bg-light-gray">
-        <h1 className="text-2xl font-bold mb-6">Create Session for Teste 1 Pratico in Fundamentos de Programação</h1>
+        <h1 className="text-2xl font-bold mb-6">{t('CreateSessionTitle')}</h1>
 
         {formError && (
           <Alert variant="destructive" className="mb-6">
@@ -178,9 +179,9 @@ export default function CreateSessionForm() {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>{t('SessionTitle')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Session Title" {...field} />
+                    <Input placeholder={t('SessionTitlePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -193,14 +194,14 @@ export default function CreateSessionForm() {
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>{t('Date')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                     variant={"outline"}
                     className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")} >
-                            {field.value ? format(field.value, "yyyy-MM-dd") : <span>YYYY-MM-DD</span>}
+                            {field.value ? format(field.value, "yyyy-MM-dd") : <span>{t('DatePlaceholder')}</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -218,9 +219,9 @@ export default function CreateSessionForm() {
                 name="room"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Room</FormLabel>
+                    <FormLabel>{t('Room')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Room Name" {...field} />
+                      <Input placeholder={t('RoomPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,7 +232,7 @@ export default function CreateSessionForm() {
                 name="duration"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration</FormLabel>
+                    <FormLabel>{t('Duration')}</FormLabel>
                     <FormControl>
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
@@ -239,7 +240,7 @@ export default function CreateSessionForm() {
                             type="number" 
                             min="0" 
                             max="10" 
-                            placeholder="Hours" 
+                            placeholder={t('Hours')} 
                             value={field.value.split(':')[0] || ""}
                             onChange={(e) => {
                               const hours = e.target.value;
@@ -253,7 +254,7 @@ export default function CreateSessionForm() {
                             type="number" 
                             min="0" 
                             max="59" 
-                            placeholder="Minutes" 
+                            placeholder={t('Minutes')} 
                             value={field.value.split(':')[1] || ""}
                             onChange={(e) => {
                               const hours = field.value.split(':')[0] || "00";
@@ -264,7 +265,7 @@ export default function CreateSessionForm() {
                           />
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Total duration (e.g., 02:00 for 2 hours)
+                          {t('DurationHelper')}
                         </span>
                       </div>
                     </FormControl>
@@ -275,12 +276,12 @@ export default function CreateSessionForm() {
             </div>
 
             <div className="border rounded-md p-4">
-              <h3 className="font-medium mb-4">Exam Materials</h3>
+              <h3 className="font-medium mb-4">{t('ExamMaterials')}</h3>
               
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="files">Upload Files</TabsTrigger>
-                  <TabsTrigger value="link">Use External Link</TabsTrigger>
+                  <TabsTrigger value="files">{t('UploadFiles')}</TabsTrigger>
+                  <TabsTrigger value="link">{t('UseExternalLink')}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="files" className="mt-0">
@@ -292,21 +293,21 @@ export default function CreateSessionForm() {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Upload className="h-10 w-10 text-muted-foreground" />
                       <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium">Attach Files</p>
-                        <p className="text-xs text-muted-foreground">Click to upload or drag and drop</p>
-                        <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or other document files</p>
+                        <p className="text-sm font-medium">{t('AttachFiles')}</p>
+                        <p className="text-xs text-muted-foreground">{t('DropFilesInstructions')}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t('AcceptedFileTypes')}</p>
                       </div>
                       <Input type="file" className="hidden" id="file-upload" multiple onChange={handleFileChange} />
                       <label
                         htmlFor="file-upload"
                         className="mt-2 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                       >
-                        Select Files
+                        {t('SelectFiles')}
                       </label>
                     </div>
                     {files.length > 0 && (
                       <div className="mt-4">
-                        <p className="text-sm font-medium">Selected Files:</p>
+                        <p className="text-sm font-medium">{t('SelectedFiles')}</p>
                         <ul className="text-sm text-muted-foreground mt-1">
                           {files.map((file, index) => (
                             <li key={index} className="flex justify-between items-center">
@@ -333,19 +334,19 @@ export default function CreateSessionForm() {
                     name="examLink"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>External Exam Link</FormLabel>
+                        <FormLabel>{t('ExternalExamLink')}</FormLabel>
                         <FormControl>
                           <div className="flex items-center">
                             <Link className="mr-2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                              placeholder="https://example.com/exam" 
+                              placeholder={t('ExamLinkPlaceholder')} 
                               {...field}
                               className="flex-1"
                             />
                           </div>
                         </FormControl>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Enter a valid URL starting with http:// or https://
+                          {t('ExamLinkHelper')}
                         </p>
                         <FormMessage />
                       </FormItem>
@@ -358,11 +359,12 @@ export default function CreateSessionForm() {
             <div className="flex justify-between">
               <BackButton />
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Session"}
+                {isSubmitting ? t('Creating') + "..." : t('CreateSession')}
               </Button>
             </div>
           </form>
         </Form>
+        <Toaster richColors />
       </div>
     )
 }

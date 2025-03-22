@@ -169,10 +169,6 @@ export const sessionService = {
   
     startSession: async (courseId, examId, sessionId) => {
       try {
-        if (!window.confirm("Are you sure you want to start this exam session? This action cannot be undone.")) {
-          return false;
-        }
-        
         const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/start`, {
           method: "POST",
           headers: {
@@ -192,10 +188,6 @@ export const sessionService = {
 
     endSession: async (courseId, examId, sessionId) => {
         try {
-          if (!window.confirm("Are you sure you want to end this exam session? All students will lose access to the exam.")) {
-            return false;
-          }
-          
           const response = await fetchApi(`${ENDPOINTS.SESSION_END(courseId, examId, sessionId)}`, {
             method: "POST",
             headers: {
