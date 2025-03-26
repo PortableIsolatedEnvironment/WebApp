@@ -383,7 +383,7 @@ export default function MonitoringPage() {
           </div>
           <ScreenViewer
             nmec={nmec}
-            sessionId={sessionUser?.id || session_id}
+            sessionId={session_id}
             courseId={course_id}
             examId={exam_id}
           />
