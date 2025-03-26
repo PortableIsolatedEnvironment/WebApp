@@ -19,7 +19,7 @@ const geistMono = Roboto_Mono({
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
-  
+
   return {
     title: "My Pie",
     icons: {
@@ -29,15 +29,15 @@ export async function generateMetadata({ params }) {
       // Add hreflang links for SEO
       alternates: {
         languages: {
-          'en': `/${routing.locales[0]}`,
-          'pt': `/${routing.locales[1]}`,
+          en: `/${routing.locales[0]}`,
+          pt: `/${routing.locales[1]}`,
         },
       },
     },
   };
 }
 
-export default async function RootLayout({ children, params }) {  
+export default async function RootLayout({ children, params }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
     throw new Error(`Invalid locale: ${locale}`);
@@ -53,10 +53,8 @@ export default async function RootLayout({ children, params }) {
     <html lang={locale}>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-        <Navbar />
-        <main className="container mx-auto px-4">
-        {children}
-        </main>
+          <Navbar />
+          <main className="container mx-auto px-4">{children}</main>
         </NextIntlClientProvider>
       </body>
     </html>
