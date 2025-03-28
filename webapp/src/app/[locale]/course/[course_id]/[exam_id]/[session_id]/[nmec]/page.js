@@ -8,6 +8,8 @@ import { userService } from "@/api/services/userService";
 import { toast, Toaster } from "sonner";
 import { useTranslations } from "next-intl";
 import ScreenViewer from "@/components/screenshare";
+import LogViewer from "@/components/logviewer";
+
 
 export default function MonitoringPage() {
   const t = useTranslations();
@@ -389,20 +391,14 @@ export default function MonitoringPage() {
           />
         </div>
 
-        {/* Code Editor and Console */}
+        {/* Logs Screen */}
         <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">{"CodeEditor"}</h2>
-          <div className="bg-[#1E1E1E] rounded-lg p-4 h-[700px] overflow-auto">
-            <pre className="text-green-400 font-mono text-sm">
-              {`// ${t("CodeEditorContent")}
-              function example() {
-                // ${t("YourCodeHere")}
-              }
-
-              // Student code will appear here in real-time during the exam
-              `}
-            </pre>
-          </div>
+          <h2 className="text-xl font-semibold mb-4">{"ActivityLogs"}</h2>
+          <LogViewer 
+            sessionId={session_id} 
+            nmec={nmec} 
+            deviceId={sessionUser?.device_id}
+          />
         </div>
         {/* Back Button */}
         <div className="mt-8">

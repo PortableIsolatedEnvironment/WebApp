@@ -6,6 +6,7 @@ import {
   Upload,
   Link as LinkIcon,
   AlertCircle,
+  Globe,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,6 +67,9 @@ export default function EditSessionForm() {
   const [sessionData, setSessionData] = useState(null);
   const [activeTab, setActiveTab] = useState("files");
   const [formError, setFormError] = useState("");
+  // New state for link whitelist
+  const [whitelistLink, setWhitelistLink] = useState("");
+  const [whitelistLinks, setWhitelistLinks] = useState([]);
 
   const params = useParams();
   const router = useRouter();
@@ -100,6 +104,27 @@ export default function EditSessionForm() {
     );
   };
 
+  // New functions for link whitelist
+  const isValidUrl = (string) => {
+    try {
+      const url = new URL(string);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const handleAddWhitelistLink = () => {
+    if (isValidUrl(whitelistLink) && !whitelistLinks.includes(whitelistLink)) {
+      setWhitelistLinks([...whitelistLinks, whitelistLink]);
+      setWhitelistLink("");
+    }
+  };
+
+  const handleRemoveWhitelistLink = (indexToRemove) => {
+    setWhitelistLinks(whitelistLinks.filter((_, index) => index !== indexToRemove));
+  };
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -120,6 +145,11 @@ export default function EditSessionForm() {
           session_id
         );
         setSessionData(data);
+
+        // Load existing whitelist links if available
+        if (data.allowed_links && Array.isArray(data.allowed_links)) {
+          setWhitelistLinks(data.allowed_links);
+        }
 
         if (data.exam_link && data.exam_link.trim() !== "") {
           setActiveTab("link");
@@ -233,6 +263,11 @@ export default function EditSessionForm() {
       formData.append("room", values.room);
       formData.append("exam_id", Number(exam_id));
       formData.append("course_id", course_id);
+      
+      // Add allowed links to form data
+      if (whitelistLinks.length > 0) {
+        formData.append("allowed_links", JSON.stringify(whitelistLinks));
+      }
 
       for (let [key, value] of formData.entries()) {
         console.log(`${key}: ${value}`);
@@ -569,6 +604,68 @@ export default function EditSessionForm() {
                 />
               </TabsContent>
             </Tabs>
+          </div>
+
+          {/* New Link Whitelist Section */}
+          <div className="border rounded-md p-4">
+            <h3 className="font-medium mb-4">{t("Allowed Links") || "Allowed Links"}</h3>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("The Links should start by https:// or http://") || "Add links that students are allowed to access during the exam."}
+              </p>
+              
+              {/* Display current whitelist links if available */}
+              {sessionData?.allowed_links && sessionData.allowed_links.length > 0 && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm font-medium">{t("Current Allowed Links") || "Current Allowed Links"}:</p>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    {/* This will be replaced by the dynamic list below */}
+                  </div>
+                </div>
+              )}
+              
+              {/* Add whitelist links */}
+              <div className="flex gap-2">
+                <div className="flex items-center flex-1">
+                  <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="https://example.com"
+                    value={whitelistLink}
+                    onChange={(e) => setWhitelistLink(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={handleAddWhitelistLink}
+                  disabled={!isValidUrl(whitelistLink)}
+                >
+                  {t("AddLink") || "Add Link"}
+                </Button>
+              </div>
+              
+              {/* Display whitelist links */}
+              {whitelistLinks.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium">{t("Whitelisted Links") || "Whitelisted Links"}:</p>
+                  <ul className="mt-2 space-y-2">
+                    {whitelistLinks.map((link, index) => (
+                      <li key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
+                        <span className="text-sm truncate max-w-[80%]">{link}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveWhitelistLink(index)}
+                          className="h-8 w-8 p-0"
+                        >
+                          ×
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-between">
