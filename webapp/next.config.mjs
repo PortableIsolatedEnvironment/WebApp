@@ -13,6 +13,15 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/en/login', 
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
