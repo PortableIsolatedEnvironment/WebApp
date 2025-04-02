@@ -47,15 +47,23 @@ export default function LoginForm() {
       // Store user data in a cookie - IMPORTANT!
       document.cookie = `currentUser=${JSON.stringify(data)}; path=/; max-age=86400`;
       
-      // Wait a moment for the cookie to be set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the current locale from the URL
-      const locale = window.location.pathname.split('/')[1] || 'en';
-      
-      // Redirect to the courses page with locale
-      console.log("Login successful", data);
-      router.push(`/${locale}`);
+      // if role is admin or teacher redirect to /course
+      if (data.role === "admin" || data.role === "teacher") {
+        // Wait a moment for the cookie to be set
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Get the current locale from the URL
+        const locale = window.location.pathname.split('/')[1] || 'en';
+        
+        // Redirect to the courses page with locale
+        console.log("Login successful", data);
+        router.push(`/${locale}`);
+        return;
+      }
+      // if role is student redirect 'access denied'
+      if (data.role === "student") {;
+        throw new Error("Access denied");
+      }
     } catch (error) {
       console.error("Login error:", error);
       setError(error.message || "Login failed");
