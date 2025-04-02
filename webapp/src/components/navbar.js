@@ -2,11 +2,24 @@
 import { Search, User, LogOut } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import LanguageSwitcher from "./language-switcher"
 import { useTranslations } from 'next-intl'
 
 export default function Navbar({searchQuery, setSearchQuery}) { 
   const t = useTranslations();
+  const router = useRouter();
+  
+  const handleLogout = () => {
+    // Clear the user cookie
+    document.cookie = "currentUser=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    
+    // Get the current locale
+    const locale = window.location.pathname.split('/')[1] || 'en';
+    
+    // Redirect to the root page
+    router.push(`/${locale}`);
+  };
   
   return (
     <nav className="bg-[#007f39] p-3 h-20">
@@ -41,10 +54,13 @@ export default function Navbar({searchQuery, setSearchQuery}) {
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
           <User className="h-6 w-6 text-white cursor-pointer" title={t('Profile')} />
-          <LogOut className="h-6 w-6 text-white cursor-pointer" title={t('Logout')} />
+          <LogOut 
+            className="h-6 w-6 text-white cursor-pointer" 
+            title={t('Logout')} 
+            onClick={handleLogout}
+          />
         </div>
       </div>
     </nav>
   )
 }
-
