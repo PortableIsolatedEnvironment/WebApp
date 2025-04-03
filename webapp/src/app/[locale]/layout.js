@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
 
   return {
-    title: "My Pie",
+    title: "Portable Isolated Environment",
     icons: {
       icon: "/pie_icon.png",
     },
