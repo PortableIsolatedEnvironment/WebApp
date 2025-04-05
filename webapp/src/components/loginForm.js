@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { set } from "date-fns";
+
 
 export default function LoginForm() {
   const t = useTranslations();
@@ -115,7 +115,7 @@ export default function LoginForm() {
         disabled={isLoading}
         className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:bg-blue-400"
       >
-        {isLoading ? t("LoggingIn") : t("Login")}
+        {isLoading ? t("Logging In...") : t("Login")}
       </button>
     </form>
   );

@@ -12,7 +12,14 @@ const BackButton = () => {
     const handleBack = () => {
         const localeStripped = pathname.replace(/\/[a-z]{2}/, '');
         const pathParts = localeStripped.split('/').filter(Boolean);
-        
+        let locale;
+
+        try {
+            locale = pathname.split('/')[1];
+        }
+        catch {
+            locale = 'en';
+        }
         if (pathParts.length <= 1) {
             router.push('/');
             return;
@@ -20,7 +27,7 @@ const BackButton = () => {
         
         if (pathParts[0] === 'course') {
             if (pathParts.length === 2) {
-                router.push('/');
+                router.push(`/${locale}`);
             } else if (pathParts.length === 3) {
                 router.push(`/course/${pathParts[1]}`);
             } else if (pathParts.length === 4) {

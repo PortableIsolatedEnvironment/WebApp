@@ -27,7 +27,7 @@ export default function MonitoringPage() {
 
   const params = useParams();
   const router = useRouter();
-  const { course_id, exam_id, session_id, nmec } = params;
+  const { course_id, exam_id, session_id, user_nmec } = params;
 
   // Fetch user data and session user data
   useEffect(() => {
@@ -35,13 +35,18 @@ export default function MonitoringPage() {
       try {
         setIsLoading(true);
         setError(null);
-        const user = await userService.getUser(nmec);
+        const user = await userService.getUser(user_nmec);
         setUserData(user);
 
         const sessionUsers = await sessionService.getSessionUsers(session_id);
         const currentSessionUser = sessionUsers.find(
-          (su) => su.user_nmec.toString() === nmec
+          (su) => su.user_nmec.toString() === user_nmec
         );
+        if (!currentSessionUser) {
+          setError("User not found in this session");
+          return;
+        }
+        setSessionUser(currentSessionUser);
 
         if (currentSessionUser) {
           setSessionUser(currentSessionUser);
@@ -64,7 +69,7 @@ export default function MonitoringPage() {
     // // Set up polling for real-time updates (every 10 seconds)
     // const intervalId = setInterval(fetchData, 10000);
     // return () => clearInterval(intervalId);
-  }, [nmec, session_id, course_id, exam_id]);
+  }, [user_nmec, session_id, course_id, exam_id]);
 
   useEffect(() => {
     // Calculate remaining time
@@ -116,7 +121,7 @@ export default function MonitoringPage() {
       }));
 
       await sessionService.extendUserTime(
-        nmec,
+        user_nmec,
         seconds,
         course_id,
         exam_id,
@@ -126,7 +131,7 @@ export default function MonitoringPage() {
 
       const sessionUsers = await sessionService.getSessionUsers(session_id);
       const updatedSessionUser = sessionUsers.find(
-        (su) => su.user_nmec.toString() === nmec
+        (su) => su.user_nmec.toString() === user_nmec
       );
       if (updatedSessionUser) {
         setSessionUser(updatedSessionUser);
@@ -149,7 +154,7 @@ export default function MonitoringPage() {
       }));
 
       await sessionService.extendUserTime(
-        nmec,
+        user_nmec,
         seconds,
         course_id,
         exam_id,
@@ -159,7 +164,7 @@ export default function MonitoringPage() {
 
       const sessionUsers = await sessionService.getSessionUsers(session_id);
       const updatedSessionUser = sessionUsers.find(
-        (su) => su.user_nmec.toString() === nmec
+        (su) => su.user_nmec.toString() === user_nmec
       );
       if (updatedSessionUser) {
         setSessionUser(updatedSessionUser);
@@ -186,7 +191,7 @@ export default function MonitoringPage() {
       // Call an API to end the exam for this specific user with a message
       const message = "";
       await sessionService.endUserSession(
-        nmec,
+        user_nmec,
         course_id,
         exam_id,
         session_id,
@@ -207,7 +212,7 @@ export default function MonitoringPage() {
 
     try {
       await sessionService.sendBroadcastMessage(
-        nmec,
+        user_nmec,
         broadcastMessage,
         course_id,
         exam_id,
@@ -262,7 +267,7 @@ export default function MonitoringPage() {
                 {userData?.name || t("Unknown")}
               </p>
               <p className="text-lg mb-2">
-                <span className="font-semibold">{t("NMEC")}:</span> {nmec}
+                <span className="font-semibold">{t("NMEC")}:</span> {user_nmec}
               </p>
               <p className="text-lg mb-2">
                 <span className="font-semibold">{t("Email")}:</span>{" "}
@@ -384,7 +389,7 @@ export default function MonitoringPage() {
             </p>
           </div>
           <ScreenViewer
-            nmec={nmec}
+            user_nmec={user_nmec}
             sessionId={session_id}
             courseId={course_id}
             examId={exam_id}
@@ -396,7 +401,7 @@ export default function MonitoringPage() {
           <h2 className="text-xl font-semibold mb-4">{"ActivityLogs"}</h2>
           <LogViewer 
             sessionId={session_id} 
-            nmec={nmec} 
+            user_nmec={user_nmec} 
             deviceId={sessionUser?.device_id}
           />
         </div>

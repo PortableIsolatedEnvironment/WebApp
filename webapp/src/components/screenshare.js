@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
 
-export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
+export default function ScreenViewer({ user_nmec, sessionId, courseId, examId }) {
   const videoRef = useRef(null);
   const peerConnection = useRef(null);
   const webSocket = useRef(null);
@@ -25,12 +25,12 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
   // Request screen sharing from student
   const requestScreenShare = async () => {
     if (webSocket.current?.readyState === WebSocket.OPEN) {
-      logWithTime(`Requesting screen share for student ${nmec}`);
+      logWithTime(`Requesting screen share for student ${user_nmec}`);
       
       webSocket.current.send(
         JSON.stringify({
           type: "request_screen_share",
-          userNmec: nmec,
+          userNmec: user_nmec,
           sessionId: sessionId
         })
       );
@@ -51,12 +51,12 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
     }
 
     try {
-      logWithTime("Sending stop request to server", { nmec, sessionId });
+      logWithTime("Sending stop request to server", { user_nmec, sessionId });
 
       webSocket.current.send(
         JSON.stringify({
           type: "stop_screen_share",
-          userNmec: nmec,
+          userNmec: user_nmec,
           sessionId: sessionId,
         })
       );
@@ -153,7 +153,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
           ws.send(
             JSON.stringify({
               type: "check_connection",
-              userNmec: nmec,
+              userNmec: user_nmec,
               sessionId: sessionId
             })
           );
@@ -247,7 +247,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
 
     if (message.message.includes("not connected")) {
       setStudentStatus("disconnected");
-      setError(`Student ${nmec} is not connected`);
+      setError(`Student ${user_nmec} is not connected`);
     } else if (message.message.includes("sent to student")) {
       setStudentStatus("connected");
       setStatus("waiting");
@@ -265,7 +265,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
     setStudentStatus(message.connected ? "connected" : "disconnected");
     
     if (!message.connected) {
-      setError(`Student ${nmec} is not connected`);
+      setError(`Student ${user_nmec} is not connected`);
     } else {
       setError(null);
     }
@@ -339,7 +339,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
         webSocket.current.send(
           JSON.stringify({
             type: "answer",
-            userNmec: nmec,
+            userNmec: user_nmec,
             sdp: pc.localDescription.sdp,
             sessionId: sessionId
           })
@@ -398,7 +398,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
         webSocket.current.send(
           JSON.stringify({
             type: "ice-candidate",
-            userNmec: nmec,
+            userNmec: user_nmec,
             candidate: event.candidate,
             sessionId: sessionId,
             source: "monitor",
@@ -529,7 +529,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
         cleanupConnections();
       }
     };
-  }, [nmec, sessionId, courseId, examId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user_nmec, sessionId, courseId, examId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Monitor video performance without causing unnecessary renders
   useEffect(() => {
@@ -595,7 +595,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
           <div className="flex flex-col items-center justify-center h-full text-white">
             <p className="mb-4">
               {studentStatus === "disconnected"
-                ? `Student ${nmec} is not connected`
+                ? `Student ${user_nmec} is not connected`
                 : "Ready to request student screen"}
             </p>
             <button
@@ -607,7 +607,7 @@ export default function ScreenViewer({ nmec, sessionId, courseId, examId }) {
             </button>
             {studentStatus === "disconnected" && (
               <p className="mt-4 text-sm text-yellow-300">
-                The student must open the exam page to enable screen sharing
+                The student is not connected to the session
               </p>
             )}
           </div>

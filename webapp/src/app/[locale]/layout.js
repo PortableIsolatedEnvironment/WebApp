@@ -4,6 +4,7 @@ import Navbar from "@/components/navbar";
 import { NextIntlClientProvider } from "next-intl";
 import { hasLocale } from "next-intl";
 import { routing } from "@/i18n/routing";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Roboto({
   variable: "--font-roboto",
@@ -56,6 +57,7 @@ export default async function RootLayout({ children, params }) {
           <Navbar />
           <main className="container mx-auto px-4">{children}</main>
         </NextIntlClientProvider>
+        <Toaster />
       </body>
     </html>
   );
