@@ -1,9 +1,14 @@
-import { getTranslations } from "next-intl/server";
+'use client';
 
-import LoginForm from "@/components/loginForm";
+// import { getTranslations } from "next-intl/server";
+import { Button } from "@/components/ui/button"
+import { signIn } from "next-auth/react"
+import { getLocale } from "next-intl/server";
 
-export default async function LoginPage() {
-  const t = await getTranslations();
+// import LoginForm from "@/components/loginForm";
+
+export default function LoginPage() {
+  // const t = await getTranslations();
   
   return (
     <div className="min-h-screen flex items-center justify-center" 
@@ -13,9 +18,14 @@ export default async function LoginPage() {
            backgroundPosition: "center"
          }}>
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-        <h1 className="text-4xl font-bold mb-8 text-center">{t("Login")}</h1>
+        {/* <h1 className="text-4xl font-bold mb-8 text-center">{t("Login")}</h1> */}
         
-        <LoginForm />
+        {/* <LoginForm /> */}
+
+        <Button
+          onClick={() => signIn("ua", { redirectTo: `/${locale}/`, redirect: true })}
+          className="w-full"
+        />
       </div>
     </div>
   );

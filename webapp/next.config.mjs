@@ -17,7 +17,11 @@ const nextConfig = {
     return [
       {
         source: '/',
-        destination: '/en/login', 
+        has: [
+          { type: 'query', key: 'code' },
+          { type: 'query', key: 'session_state' }
+        ],
+        destination: '/api/auth/callback/ua',
         permanent: false,
       },
     ];

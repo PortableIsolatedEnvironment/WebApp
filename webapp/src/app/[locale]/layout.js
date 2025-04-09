@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { hasLocale } from "next-intl";
 import { routing } from "@/i18n/routing";
 import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "@/app/[locale]/providers";
 
 const geistSans = Roboto({
   variable: "--font-roboto",
@@ -53,11 +54,13 @@ export default async function RootLayout({ children, params }) {
   return (
     <html lang={locale}>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <Navbar />
-          <main className="container mx-auto px-4">{children}</main>
-        </NextIntlClientProvider>
-        <Toaster />
+        <Providers>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <Navbar />
+            <main className="container mx-auto px-4">{children}</main>
+          </NextIntlClientProvider>
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

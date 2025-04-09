@@ -15,18 +15,18 @@ export default async function middleware(request) {
   const currentUser = request.cookies.get("currentUser")?.value;
 
   // If user is not authenticated and not on login page, redirect to login
-  if (!currentUser && !isLoginPage) {
-    let locale;
+  // if (!currentUser && !isLoginPage) {
+  //   let locale;
 
-    try {
-      locale = await getLocale(request);
-    } catch {
-      locale = routing.defaultLocale;
-    }
+  //   try {
+  //     locale = await getLocale(request);
+  //   } catch {
+  //     locale = routing.defaultLocale;
+  //   }
 
-    const url = new URL(`/${locale}/login`, request.nextUrl.origin);
-    return NextResponse.redirect(url);
-  }
+  //   const url = new URL(`/${locale}/login`, request.nextUrl.origin);
+  //   return NextResponse.redirect(url);
+  // }
 
   // Process i18n middleware
   return intlMiddleware(request);
@@ -36,3 +36,6 @@ export default async function middleware(request) {
 export const config = {
   matcher: ["/((?!api|_next|_vercel|.*\\.(?:jpg|png|gif|ico|svg)$).*)"],
 };
+
+
+export { auth as middleware } from "@/auth"
