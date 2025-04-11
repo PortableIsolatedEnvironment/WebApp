@@ -23,21 +23,25 @@ import { Alert } from "@/components/ui/alert"
 import { toast, Toaster } from "sonner"
 import { useTranslations } from "next-intl"
 
-const formSchema = z.object({
-  title: z.string().min(2, {
-    message: "Exam title must be at least 2 characters.",
-  }),
-  createSession: z.boolean().default(false),
-  sessionTitle: z.string().optional(),
-  date: z.date().optional(),
-  room: z.string().optional(),
-  duration: z.string().optional(),
-  examLink: z
-    .string()
-    .url("Please enter a valid URL starting with http:// or https://")
-    .optional()
-    .or(z.literal("")),
-})
+
+
+function createFormSchema(t) {
+  return z.object({
+    title: z.string().min(2, {
+      message: t("Exam title must be at least 2 characters")
+    }),
+    createSession: z.boolean().default(false),
+    sessionTitle: z.string().optional(),
+    date: z.date().optional(),
+    room: z.string().optional(),
+    duration: z.string().optional(),
+    examLink: z
+      .string()
+      .url(t("Please enter a valid URL starting with http:// or https://"))
+      .optional()
+      .or(z.literal("")),
+  })
+}
 
 export default function CreateExamForm() {
   const [files, setFiles] = useState([])
@@ -53,7 +57,7 @@ export default function CreateExamForm() {
   const { course_id } = params
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createFormSchema(t)),
     defaultValues: {
       title: "",
       createSession: false,
@@ -97,7 +101,7 @@ export default function CreateExamForm() {
       const hasLink = values.examLink && values.examLink.trim() !== ""
       
       if (hasFiles && hasLink) {
-        setFormError("You cannot provide both files and an exam link. Please choose one option.")
+        setFormError(t("You cannot provide both files and an exam link. Please choose one option."))
         return false
       }
     }

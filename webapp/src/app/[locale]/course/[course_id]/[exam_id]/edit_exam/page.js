@@ -21,7 +21,7 @@ const formSchema = z.object({
 })
 
 export default function EditExamForm() {
-  const t = useTranslations('common');
+  const t = useTranslations();
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)

@@ -100,5 +100,13 @@
     "EditExam": "Editar Exame",
     "Hours": "Horas",
     "Minutes": "Minutos",
-    "CreateSession": "Sessão criada com sucesso!"
+    "CreateSession": "Sessão criada com sucesso!",
+    "Are you sure you want to end the session? This will finalize the exam for all students": "Tem certeza de que deseja encerrar a sessão? Isso finalizará o exame para todos os alunos",
+    "Are you sure you want to start the session? This will allow students to begin the exam": "Tem certeza de que deseja iniciar a sessão? Isso permitirá que os alunos comecem o exame",
+    "End Session": "Encerrar Sessão",
+    "Start Session": "Iniciar Sessão",
+    "Cancel": "Cancelar",
+    "Exam title must be at least 2 characters": "O título do exame deve ter pelo menos 2 caracteres",
+    "Please enter a valid URL starting with http:// or https://": "Por favor, insira um URL válido começando com http:// ou https://",
+    "You cannot provide both files and an exam link; Please choose one option": "Não pode fornecer tanto arquivos quanto um link de exame. Por favor, escolha uma opção."
 }
