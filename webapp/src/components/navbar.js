@@ -1,30 +1,129 @@
-'use client'
-import { Search, User, LogOut } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import LanguageSwitcher from "./language-switcher"
-import { useTranslations } from 'next-intl'
+"use client";
+import { Search, User, LogOut } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import LanguageSwitcher from "./language-switcher";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
-export default function Navbar({searchQuery, setSearchQuery}) { 
+export default function Navbar({ searchQuery, setSearchQuery }) {
   const t = useTranslations();
   const router = useRouter();
-  
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Extract cookie parsing logic to component level
+  const getUserFromCookie = () => {
+    const cookieValue = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("currentUser="));
+
+    console.log("Cookie Value:", cookieValue);
+
+    if (cookieValue) {
+      try {
+        const userJson = decodeURIComponent(cookieValue.split("=")[1]);
+        const userData = JSON.parse(userJson);
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error("Error parsing user cookie:", error);
+      }
+    } else {
+      // If no cookie found, ensure currentUser is null
+      setCurrentUser(null);
+    }
+  };
+
+  // Handle cookie changes
+  const handleCookieChange = () => {
+    console.log("Cookie change detected");
+    getUserFromCookie();
+  };
+
+  // Handle dialog open change with data refresh
+  const handleDialogOpenChange = (open) => {
+    if (open) {
+      // Refresh user data when dialog opens
+      getUserFromCookie();
+    }
+    setIsUserDialogOpen(open);
+  };
+
+  // Set up cookie monitoring
+  useEffect(() => {
+    // Initial load
+    getUserFromCookie();
+
+    // Set up event listeners for cookie changes
+    document.addEventListener("click", handleCookieChange);
+    document.addEventListener("userLogin", handleCookieChange);
+    document.addEventListener("userLogout", handleCookieChange);
+
+    // Poll for cookie changes every 2 seconds as a fallback
+    const cookieCheckInterval = setInterval(getUserFromCookie, 2000);
+
+    // Cleanup event listeners on component unmount
+    return () => {
+      document.removeEventListener("click", handleCookieChange);
+      document.removeEventListener("userLogin", handleCookieChange);
+      document.removeEventListener("userLogout", handleCookieChange);
+      clearInterval(cookieCheckInterval);
+    };
+  }, []);
+
+  // Handle logout
   const handleLogout = () => {
-    // Clear the user cookie
-    document.cookie = "currentUser=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    
-    // Get the current locale
-    const locale = window.location.pathname.split('/')[1] || 'en';
-    
-    // Redirect to the root page
+    document.cookie =
+      "currentUser=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    setCurrentUser(null);
+    toast.success(t("Logout successful"));
+    const locale = window.location.pathname.split("/")[1] || "en";
     router.push(`/${locale}`);
   };
-  
+
+  // Get role icon based on user role
+  const getRoleIcon = () => {
+    if (!currentUser?.role) {
+      return null;
+    }
+
+    const role = currentUser.role;
+    if (role === "teacher") {
+      return (
+        <div className="bg-blue-500 text-white rounded-full h-10 w-10 flex items-center justify-center">
+          T
+        </div>
+      );
+    } else if (role === "admin") {
+      return (
+        <div className="bg-red-500 text-white rounded-full h-10 w-10 flex items-center justify-center">
+          A
+        </div>
+      );
+    } else {
+      return (
+        <div className="bg-gray-300 text-black rounded-full h-10 w-10 flex items-center justify-center">
+          ?
+        </div>
+      );
+    }
+  };
+
   return (
     <nav className="bg-[#007f39] p-3 h-20">
       <div className="container mx-auto flex items-center justify-between">
-
         {/* Logo */}
         <Link href="/">
           <Image
@@ -41,9 +140,9 @@ export default function Navbar({searchQuery, setSearchQuery}) {
           <div className="relative max-w-2xl mx-auto">
             <input
               type="search"
-              placeholder={t('Search')}
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
+              placeholder={t("Search")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-6 py-3 rounded-md bg-white/90 pl-4 pr-10 text-lg"
             />
             <Search className="absolute right-3 top-3 h-6 w-6 text-gray-500" />
@@ -53,14 +152,88 @@ export default function Navbar({searchQuery, setSearchQuery}) {
         {/* Icons */}
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
-          <User className="h-6 w-6 text-white cursor-pointer" title={t('Profile')} />
-          <LogOut 
-            className="h-6 w-6 text-white cursor-pointer" 
-            title={t('Logout')} 
+          <User
+            className="h-6 w-6 text-white cursor-pointer"
+            title={t("Profile")}
+            onClick={() => handleDialogOpenChange(true)}
+          />
+          <LogOut
+            className="h-6 w-6 text-white cursor-pointer"
+            title={t("Logout")}
             onClick={handleLogout}
           />
         </div>
       </div>
+
+      {/* User Profile Dialog */}
+      <Dialog open={isUserDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("User Profile")}</DialogTitle>
+            <DialogDescription>
+              {t("Your account information")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="flex items-center space-x-4 mb-4">
+              <div
+                className={`rounded-full h-12 w-12 flex items-center justify-center ${
+                  currentUser?.role === "teacher"
+                    ? "bg-blue-500 text-white"
+                    : currentUser?.role === "admin"
+                    ? "bg-red-500 text-white"
+                    : "bg-gray-300 text-black"
+                }`}
+              >
+                {currentUser?.name
+                  ? currentUser.name.charAt(0).toUpperCase() // Use the first letter of the name
+                  : "?"}
+              </div>
+              <div>
+                <h3 className="font-medium text-lg">
+                  {currentUser?.name || currentUser?.email || t("Unknown User")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {currentUser?.email || ""}
+                </p>
+              </div>
+            </div>
+
+            {/* User Details Section */}
+            <div className="space-y-3 mt-4 border-t pt-3">
+              {currentUser?.role && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">{t("Role")}:</span>
+                  <span className="text-sm capitalize bg-slate-100 px-2 py-0.5 rounded">
+                    {currentUser.role}
+                  </span>
+                </div>
+              )}
+
+              {currentUser?.nmec && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">
+                    {t("Student ID")}:
+                  </span>
+                  <span className="text-sm font-mono bg-slate-100 px-2 py-0.5 rounded">
+                    {currentUser.nmec}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="default"
+              onClick={() => setIsUserDialogOpen(false)}
+            >
+              {t("Close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </nav>
-  )
+  );
 }

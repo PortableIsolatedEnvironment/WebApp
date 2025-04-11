@@ -4,21 +4,22 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+
 export default function LoginForm() {
   const t = useTranslations();
   const router = useRouter();
   const [credentials, setCredentials] = useState({
     email: "",
-    password: ""
+    password: "",
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCredentials(prev => ({
+    setCredentials((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -26,7 +27,7 @@ export default function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     try {
       // Make login request to your API
       const response = await fetch("http://localhost:8000/users/login", {
@@ -36,29 +37,36 @@ export default function LoginForm() {
         },
         body: JSON.stringify(credentials),
       });
-      
+
       // Parse the response
       const data = await response.json();
-      
+
+      console.log(data);
+
       if (!response.ok) {
-        throw new Error(data.detail || "Login failed");
+        setError("Invalid Credentials");
       }
-      
-      // Store user data in a cookie - IMPORTANT!
-      document.cookie = `currentUser=${JSON.stringify(data)}; path=/; max-age=86400`;
-      
-      // Wait a moment for the cookie to be set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the current locale from the URL
-      const locale = window.location.pathname.split('/')[1] || 'en';
-      
-      // Redirect to the courses page with locale
-      console.log("Login successful", data);
-      router.push(`/${locale}`);
+
+      // if role is admin or teacher redirect to /
+      if (data.role === "admin" || data.role === "teacher") {
+        document.cookie = `currentUser=${JSON.stringify(
+          data
+        )}; path=/; max-age=86400`;
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Get the current locale from the URL
+        const locale = window.location.pathname.split("/")[1] || "en";
+
+        router.push(`/${locale}`);
+        return;
+      }
+      if (data.role === "student") {
+        setError("Invalid Credentials");
+      }
     } catch (error) {
       console.error("Login error:", error);
-      setError(error.message || "Login failed");
+      setError("Invalid Credentials");
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +79,7 @@ export default function LoginForm() {
           {error}
         </div>
       )}
-      
+
       <div>
         <label htmlFor="email" className="block text-gray-700 mb-2">
           {t("email")}
@@ -86,7 +94,7 @@ export default function LoginForm() {
           required
         />
       </div>
-      
+
       <div>
         <label htmlFor="password" className="block text-gray-700 mb-2">
           {t("Password")}
@@ -101,13 +109,13 @@ export default function LoginForm() {
           required
         />
       </div>
-      
+
       <button
         type="submit"
         disabled={isLoading}
         className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:bg-blue-400"
       >
-        {isLoading ? t("LoggingIn") : t("Login")}
+        {isLoading ? t("Logging In...") : t("Login")}
       </button>
     </form>
   );

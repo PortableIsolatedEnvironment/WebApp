@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { redirect } from "next/navigation";
-import Link from "next/link";
+
 import LoginForm from "@/components/loginForm";
 
 export default async function LoginPage() {
