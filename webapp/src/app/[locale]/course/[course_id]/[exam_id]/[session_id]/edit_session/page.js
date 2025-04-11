@@ -32,7 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
 import BackButton from "@/components/back-button";
-import { sessionService } from "@/api/services/sessionService";
+import { sessionService } from "@/app/api/services/sessionService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert } from "@/components/ui/alert";
 import { toast, Toaster } from "sonner";

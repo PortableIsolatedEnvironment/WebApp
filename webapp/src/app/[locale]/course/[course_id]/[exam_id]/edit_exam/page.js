@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Skeleton } from "@/components/ui/skeleton"
 import BackButton from "@/components/back-button"
-import { examService } from "@/api/services/examService"
+import { examService } from "@/app/api/services/examService"
 import { useTranslations } from 'next-intl'
 
 const formSchema = z.object({

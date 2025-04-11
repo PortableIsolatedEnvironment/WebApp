@@ -1,5 +1,5 @@
-import { fetchApi } from "@/api/client";
-import { ENDPOINTS  } from "@/api/endpoints";
+import { fetchApi } from "@/app/api/client";
+import { ENDPOINTS  } from "@/app/api/endpoints";
 import { get } from "react-hook-form";
 
 export const userService = {

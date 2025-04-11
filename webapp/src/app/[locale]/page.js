@@ -1,5 +1,5 @@
 import CourseCard from "@/components/course-card"
-import { courseService } from "@/api/services/courseService"
+import { courseService } from "@/app/api/services/courseService"
 import { getTranslations } from "next-intl/server";
 import { Link } from '@/i18n/navigation';
 
@@ -18,7 +18,7 @@ export default async function CoursesPage() {
   return (
     <div className="min-h-screen bg-light-gray">
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">{t("CourseSelection")}</h1>
+        <h1 className="text-4xl font-bold mb-8">{t("CourseSelection")} </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses && courses.map((course, index) => (

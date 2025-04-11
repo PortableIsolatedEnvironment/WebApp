@@ -45,10 +45,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.AUTH_UA_CLIENT_SECRET,
     })
   ],
+  pages: {
+    signIn: '/en/login',
+  },
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log("JWT callback - account:", account);
-      
       if (account && user) {
         token.accessToken = account.access_token;
         token.idToken = account.id_token;
@@ -57,13 +58,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      console.log("Session callback called");
+      // Make user information available on the client
+      session.accessToken = token.accessToken;
+      session.user = token.user || session.user;
       
-      if (token) {
-        session.accessToken = token.accessToken;
-        session.user = token.user || session.user;
-      }
+      // Simply return the session - cookie handling moved to middleware
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith(baseUrl)) return url;
+      if (url.startsWith("/")) return new URL(url, baseUrl).toString();
+      return baseUrl;
     }
   }
 })

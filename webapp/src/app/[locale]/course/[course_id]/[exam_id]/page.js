@@ -4,16 +4,20 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
 import TestCard from "@/components/editable-card"
-import { courseService } from "@/api/services/courseService"
-import { examService } from "@/api/services/examService"
-import { sessionService } from "@/api/services/sessionService"
-
+import { courseService } from "@/app/api/services/courseService"
+import { examService } from "@/app/api/services/examService"
+import { sessionService } from "@/app/api/services/sessionService"
+import { getTranslations } from "next-intl/server"
+import { getLocale } from "next-intl/server"
 
 export default async function ExamPage({ params }) {
   const { course_id, exam_id } = await params;
   const course = await courseService.getCoursebyID(course_id);
   const exam = await examService.getExam(course_id, exam_id);
   const sessions = await sessionService.getSessions(course_id, exam_id);
+  const t = await getTranslations();
+  const locale = await getLocale();
+
 
 if (!exam) {
     return notFound(); // Show 404 if exam or course doesn't exist
@@ -29,10 +33,10 @@ if (!exam) {
                 key={session.id}
                 name={session.name}
                 description={new Date(session.date).toLocaleDateString()}
-                link={`/course/${course_id}/${exam_id}/${session.id}`}
-                edit_link={`/course/${course_id}/${exam_id}/${session.id}/edit_session`}
+                link={`${exam_id}/${session.id}`}
+                edit_link={`${exam_id}/${session.id}/edit_session`}
                 type = "session"
-                courseId={course_id} // Make sure this is defined and not null/undefined
+                courseId={course_id}
                 examId={exam_id}
                 sessionId={session.id}
               />

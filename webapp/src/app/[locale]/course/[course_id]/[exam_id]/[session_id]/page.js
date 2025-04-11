@@ -4,15 +4,18 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import BackButton from "@/components/back-button";
-import { sessionService } from "@/api/services/sessionService";
-import { userService } from "@/api/services/userService";
+import { sessionService } from "@/app/api/services/sessionService";
+import { userService } from "@/app/api/services/userService";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import { StartSessionDialog, EndSessionDialog } from "@/components/session-dialogs";
 import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
+
 
 export default function SessionClientPage() {
   const t = useTranslations();
+  const locale = useLocale();
   const [session, setSession] = useState(null);
   const [sessionUsers, setSessionUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -291,7 +294,7 @@ export default function SessionClientPage() {
   };
 
   const handleViewUserDetails = (sessionUser) => {
-    router.push(`/course/${course_id}/${exam_id}/${session_id}/${sessionUser.user_nmec}`);
+    router.push(`/${locale}/course/${course_id}/${exam_id}/${session_id}/${sessionUser.user_nmec}`);
   };
 
   // Just like Broadcast message

@@ -16,9 +16,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { signOut } from "next-auth/react";
+import { useLocale } from "next-intl";
 
 export default function Navbar({ searchQuery, setSearchQuery }) {
   const t = useTranslations();
+  const locale  = useLocale();
   const router = useRouter();
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -83,15 +86,75 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
   }, []);
 
   // Handle logout
-  const handleLogout = () => {
-    document.cookie =
-      "currentUser=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-    setCurrentUser(null);
-    toast.success(t("Logout successful"));
-    const locale = window.location.pathname.split("/")[1] || "en";
-    router.push(`/${locale}`);
+  const handleLogout = async () => {
+    try {
+      // Notify the app that logout is happening
+      document.dispatchEvent(new Event("userLogout"));
+      
+      // Set up redirect info first (before we clear state)
+      const locale = window.location.pathname.split("/")[1] || "en";
+      const loginPath = `/${locale}/login`;
+      
+      // ---- STEP 1: Clear local browser storage ----
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // ---- STEP 2: Clear cookies more thoroughly ----
+      // Get all cookie names
+      const cookieNames = document.cookie
+        .split(';')
+        .map(c => c.split('=')[0].trim());
+      
+      // Clear each cookie thoroughly with multiple approaches
+      cookieNames.forEach(name => {
+        // Clear with path=/
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
+        
+        // Clear with domain
+        document.cookie = `${name}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
+        
+        // Clear with www subdomain if applicable
+        if (!window.location.hostname.startsWith('www.')) {
+          document.cookie = `${name}=; path=/; domain=www.${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
+        }
+        
+        // Clear with root domain (for subdomains)
+        const rootDomain = window.location.hostname.split('.').slice(-2).join('.');
+        document.cookie = `${name}=; path=/; domain=.${rootDomain}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
+        
+        // Handle secure cookies
+        document.cookie = `${name}=; path=/; secure; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None`;
+      });
+      
+      // ---- STEP 3: Update UI state ----
+      setCurrentUser(null);
+      
+      // ---- STEP 4: Show feedback ----
+      toast.success(t("Logout successful"));
+      
+      // ---- STEP 5: Use NextAuth signOut ----
+      try {
+        await signOut({ 
+          redirect: false,
+          callbackUrl: loginPath
+        });
+      } catch (signOutError) {
+        console.error("NextAuth signOut error:", signOutError);
+        // Continue with manual redirect even if NextAuth signOut fails
+      }
+      
+      // ---- STEP 6: Hard redirect to login page ----
+      // Force a complete page reload to ensure clean state
+      window.location.href = loginPath;
+      
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Last-resort fallback: force page reload to login
+      const locale = window.location.pathname.split("/")[1] || "en";
+      window.location.href = `/${locale}/login`;
+    }
   };
+
 
   // Get role icon based on user role
   const getRoleIcon = () => {
@@ -125,7 +188,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
     <nav className="bg-[#007f39] p-3 h-20">
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo */}
-        <Link href="/">
+        <Link href={`/${locale}/`}>
           <Image
             src="/pie_icon.png"
             alt="Pie Logo"

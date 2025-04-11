@@ -5,10 +5,8 @@ import { Pencil, Router, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchApi } from "@/api/client";
-import { ENDPOINTS } from "@/api/endpoints";
-import { sessionService } from "@/api/services/sessionService";
-import { examService } from "@/api/services/examService";
+import { sessionService } from "@/app/api/services/sessionService";
+import { examService } from "@/app/api/services/examService";
 
 export default function TestCard({ 
   name, 

@@ -5,14 +5,18 @@ import { Plus} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BackButton from "@/components/back-button";
 import TestCard from "@/components/editable-card";
-import { courseService } from "@/api/services/courseService";
-import { examService } from "@/api/services/examService";
+import { courseService } from "@/app/api/services/courseService";
+import { examService } from "@/app/api/services/examService";
+import { getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 
 
 export default async function CoursePage({ params }) {
   const { course_id } = await params;
   const course = await courseService.getCoursebyID(course_id);
   const exams = await examService.getExams(course_id);
+  const t = await getTranslations();
+  const locale = await getLocale();
 
   if (!course) {
     return notFound(); // Show 404 if course doesn't exist
@@ -27,8 +31,8 @@ export default async function CoursePage({ params }) {
               <TestCard
                 key={exam.id}
                 name={exam.name}
-                link={`/course/${course.id}/${exam.id}`}
-                edit_link={`/course/${course.id}/${exam.id}/edit_exam`}
+                link={`${course.id}/${exam.id}`}
+                edit_link={`${course.id}/${exam.id}/edit_exam`}
                 type = "exam"
                 courseId={course_id} // Make sure this is defined and not null/undefined
                 examId={exam.id}

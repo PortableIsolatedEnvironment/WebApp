@@ -1,31 +1,39 @@
 'use client';
 
-// import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button"
 import { signIn } from "next-auth/react"
-import { getLocale } from "next-intl/server";
-
-// import LoginForm from "@/components/loginForm";
+import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 
 export default function LoginPage() {
-  // const t = await getTranslations();
+  const t = useTranslations();
+  
+  // Prevent body scrolling when this component mounts
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
   
   return (
-    <div className="min-h-screen flex items-center justify-center" 
-         style={{
-           backgroundImage: "url('/background.jpg')",
-           backgroundSize: "cover",
-           backgroundPosition: "center"
-         }}>
+    <div 
+      className="fixed inset-0 flex items-center justify-center" 
+      style={{
+        backgroundImage: "url('/background.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat"
+      }}>
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-        {/* <h1 className="text-4xl font-bold mb-8 text-center">{t("Login")}</h1> */}
+        <h1 className="text-4xl font-bold mb-8 text-center">{t("Login")}</h1>
         
-        {/* <LoginForm /> */}
-
         <Button
-          onClick={() => signIn("ua", { redirectTo: `/${locale}/`, redirect: true })}
+          onClick={() => signIn("ua", { callbackUrl: `/en`, redirect: true })}
           className="w-full"
-        />
+        >
+          Click to login with idP UA
+        </Button>
       </div>
     </div>
   );

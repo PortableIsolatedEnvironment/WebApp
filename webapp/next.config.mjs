@@ -24,6 +24,15 @@ const nextConfig = {
         destination: '/api/auth/callback/ua',
         permanent: false,
       },
+      {
+        source: '/',
+        missing: [
+          { type: 'query', key: 'code' },
+          { type: 'query', key: 'session_state' }
+        ],
+        destination: '/en/login',
+        permanent: false,
+      }
     ];
   },
   async rewrites() {

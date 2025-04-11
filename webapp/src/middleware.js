@@ -10,24 +10,6 @@ const intlMiddleware = createIntlMiddleware(routing);
 export default async function middleware(request) {
   // Check if the URL is for the login page (considering all locales)
   const isLoginPage = /\/[^/]+\/login(\/)?$/.test(request.nextUrl.pathname);
-
-  // Get the user from cookies if available
-  const currentUser = request.cookies.get("currentUser")?.value;
-
-  // If user is not authenticated and not on login page, redirect to login
-  // if (!currentUser && !isLoginPage) {
-  //   let locale;
-
-  //   try {
-  //     locale = await getLocale(request);
-  //   } catch {
-  //     locale = routing.defaultLocale;
-  //   }
-
-  //   const url = new URL(`/${locale}/login`, request.nextUrl.origin);
-  //   return NextResponse.redirect(url);
-  // }
-
   // Process i18n middleware
   return intlMiddleware(request);
 }
