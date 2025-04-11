@@ -9,6 +9,7 @@ import { fetchApi } from "@/api/client";
 import { ENDPOINTS } from "@/api/endpoints";
 import { sessionService } from "@/api/services/sessionService";
 import { examService } from "@/api/services/examService";
+import { useTranslations } from "next-intl";
 
 export default function TestCard({ 
   name, 
@@ -22,6 +23,7 @@ export default function TestCard({
   onDeleteSuccess, // Callback after successful deletion
   })
  {
+  const t = useTranslations();
   const router = useRouter();
   const validType = ['exam', 'session'].includes(type) ? type : 'exam';
   if (validType !== type) {
@@ -36,26 +38,26 @@ export default function TestCard({
     
     console.log("Delete button clicked", { type: validType, courseId, examId, sessionId });
     
-    const confirmMessage = `Are you sure you want to delete this ${validType}?`; 
+    const confirmMessage = t(`Are you sure you want to delete this ${validType}?`); 
     if (!window.confirm(confirmMessage)) { // *CHANGE FROM ALERT TO CONFIRM DIALOG
       return;
     }
     
     if (!courseId) {
       console.error("Missing courseId - cannot delete");
-      alert(`Cannot delete ${validType}: Missing course ID`);
+      alert(t(`Cannot delete ${validType}: Missing course ID`));
       return;
     }
     
     if (!examId) {
       console.error("Missing examId - cannot delete");
-      alert(`Cannot delete ${validType}: Missing exam ID`);
+      alert(t(`Cannot delete ${validType}: Missing exam ID`));
       return;
     }
     
     if (validType === 'session' && !sessionId) {
       console.error("Missing sessionId - cannot delete session");
-      alert("Cannot delete session: Missing session ID");
+      alert(t("Cannot delete session: Missing session ID"));
       return;
     }
     
@@ -77,7 +79,7 @@ export default function TestCard({
       router.refresh();
     } catch (error) {
       console.error(`Error deleting ${validType}:`, error);
-      alert(`Failed to delete ${validType}. Please try again. (${error.message})`);
+      alert(t(`Failed to delete ${validType}. Please try again. (${error.message})`));
     } finally {
       setIsDeleting(false);
     }
@@ -111,7 +113,7 @@ export default function TestCard({
         disabled={isDeleting}
         className="absolute top-4 right-4 text-white opacity-60 hover:opacity-100">    
         <Trash2 className="h-4 w-4" />
-        {isDeleting && <span className="sr-only">Deleting...</span>}
+        {isDeleting && <span className="sr-only">{t("Deleting...")}</span>}
       </Button>
     </div>
   );

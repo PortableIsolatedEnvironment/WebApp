@@ -51,7 +51,7 @@ export default async function RootLayout({ children, params }) {
     messages = {};
   }
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning> 
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Navbar />
