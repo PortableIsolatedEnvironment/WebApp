@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CalendarIcon, Upload, Link, AlertCircle } from "lucide-react"
+import { CalendarIcon, Upload, Link, AlertCircle, Globe } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -47,6 +47,9 @@ export default function CreateExamForm() {
   const [createSessionEnabled, setCreateSessionEnabled] = useState(false)
   const [activeTab, setActiveTab] = useState("files")
   const t = useTranslations();
+  
+  const [whitelistLink, setWhitelistLink] = useState("");
+  const [whitelistLinks, setWhitelistLinks] = useState([]);
 
   const params = useParams()
   const router = useRouter()
@@ -90,6 +93,26 @@ export default function CreateExamForm() {
       e.dataTransfer.clearData()
     }
   }
+
+  const isValidUrl = (string) => {
+    try {
+      const url = new URL(string);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const handleAddWhitelistLink = () => {
+    if (isValidUrl(whitelistLink) && !whitelistLinks.includes(whitelistLink)) {
+      setWhitelistLinks([...whitelistLinks, whitelistLink]);
+      setWhitelistLink("");
+    }
+  };
+
+  const handleRemoveWhitelistLink = (indexToRemove) => {
+    setWhitelistLinks(whitelistLinks.filter((_, index) => index !== indexToRemove));
+  };
 
   const validateFormBeforeSubmit = (values) => {
     if (values.createSession) {
@@ -153,6 +176,7 @@ export default function CreateExamForm() {
             date: formattedDate,
             duration: durationInSeconds,
             room: values.room,
+            allowed_links: whitelistLinks.length > 0 ? whitelistLinks : null,
           }
 
           const sessionData = await sessionService.createSession(course_id, exam_id, session)
@@ -449,6 +473,58 @@ export default function CreateExamForm() {
                     />
                   </TabsContent>
                 </Tabs>
+              </div>
+
+              {/* New Link Whitelist Section */}
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-4">{t("Allowed Links") || "Allowed Links"}</h3>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    {t("The Links should start by https:// or http://") || "Add links that students are allowed to access during the exam."}
+                  </p>
+                  
+                  {/* Add whitelist links */}
+                  <div className="flex gap-2">
+                    <div className="flex items-center flex-1">
+                      <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="https://example.com"
+                        value={whitelistLink}
+                        onChange={(e) => setWhitelistLink(e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={handleAddWhitelistLink}
+                      disabled={!isValidUrl(whitelistLink)}
+                    >
+                      {t("AddLink") || "Add Link"}
+                    </Button>
+                  </div>
+                  
+                  {/* Display whitelist links */}
+                  {whitelistLinks.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium">{t("Whitelisted Links") || "Whitelisted Links"}:</p>
+                      <ul className="mt-2 space-y-2">
+                        {whitelistLinks.map((link, index) => (
+                          <li key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
+                            <span className="text-sm truncate max-w-[80%]">{link}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveWhitelistLink(index)}
+                              className="h-8 w-8 p-0"
+                            >
+                              ×
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

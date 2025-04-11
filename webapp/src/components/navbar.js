@@ -16,9 +16,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "next-intl";
 
 export default function Navbar({ searchQuery, setSearchQuery }) {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -125,7 +127,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
     <nav className="bg-[#007f39] p-3 h-20">
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo */}
-        <Link href="/">
+        <Link href={`/${locale}/`}>
           <Image
             src="/pie_icon.png"
             alt="Pie Logo"
