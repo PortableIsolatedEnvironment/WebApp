@@ -17,10 +17,10 @@ import {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t("Start Session")}
+              {t("Start_Session")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("Are you sure you want to start the session? This will allow students to begin the exam")}
+              {t("StartSessionPopUp")}
             </AlertDialogDescription>
           </AlertDialogHeader> 
           <AlertDialogFooter>
@@ -31,7 +31,7 @@ import {
               onClick={onConfirm}
               className="bg-[#5BA87A] text-white hover:bg-[#4A8B65]"
             >
-              {t("Start Session")}
+              {t("Start_Session")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -46,10 +46,10 @@ import {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t("End Session")}
+              {t("End_Session")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("Are you sure you want to end the session? This will finalize the exam for all students")}
+              {t("EndSessionPopUp")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -60,7 +60,7 @@ import {
               onClick={onConfirm}
               className="bg-[#993333] text-white hover:bg-[#7A2929]"
             >
-              {t("End Session")}
+              {t("End_Session")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
