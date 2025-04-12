@@ -1,6 +1,35 @@
 import { fetchApi } from "@/api/client";
 import { ENDPOINTS  } from "@/api/endpoints";
 
+
+const validateFile = (file) => {
+  // Only check basic file type - the server will do comprehensive validation
+  const allowedTypes = [
+
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'image/png',
+    'image/jpeg',
+    'application/zip',
+    'application/octet-stream'
+  ];
+  
+  if (!allowedTypes.includes(file.type) && file.type !== '') {
+    throw new Error(`File ${file.name} is not an allowed type. Please select a document, image, or archive file.`);
+  }
+  
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
+  }
+  
+  return true;
+};
+
+
+
 export const sessionService = {
     getSessions: async (courseId, examId) => {
       try {
@@ -357,31 +386,33 @@ export const sessionService = {
           throw error;
         }
       },
+
+      updateWhitelist: async (courseId, examId, sessionId, students) => {
+        try {
+          const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/whitelist`, {
+            method: "POST",
+            body: JSON.stringify({ students }),
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            }
+          });
+          return response;
+        } catch (error) {
+          console.error("Failed to update whitelist:", error);
+          throw error;
+        }
+      },
+      
+      clearWhitelist: async (courseId, examId, sessionId) => {
+        try {
+          const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/whitelist`, {
+            method: "DELETE",
+          });
+          return response;
+        } catch (error) {
+          console.error("Failed to clear whitelist:", error);
+          throw error;
+        }
+      },
 };
-
-
-const validateFile = (file) => {
-    // Only check basic file type - the server will do comprehensive validation
-    const allowedTypes = [
-
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain',
-      'image/png',
-      'image/jpeg',
-      'application/zip',
-      'application/octet-stream'
-    ];
-    
-    if (!allowedTypes.includes(file.type) && file.type !== '') {
-      throw new Error(`File ${file.name} is not an allowed type. Please select a document, image, or archive file.`);
-    }
-    
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
-    }
-    
-    return true;
-  };

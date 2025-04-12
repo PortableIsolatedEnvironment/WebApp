@@ -1,15 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import BackButton from "@/components/back-button";
 import { sessionService } from "@/api/services/sessionService";
 import { userService } from "@/api/services/userService";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
-import { StartSessionDialog, EndSessionDialog } from "@/components/session-dialogs";
-import { useTranslations } from 'next-intl';
+import {
+  StartSessionDialog,
+  EndSessionDialog,
+} from "@/components/session-dialogs";
+import { useTranslations } from "next-intl";
 
 export default function SessionClientPage() {
   const t = useTranslations();
@@ -26,13 +36,115 @@ export default function SessionClientPage() {
   const [showJoinCode, setShowJoinCode] = useState(false);
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [showEndDialog, setShowEndDialog] = useState(false);
-  
+  const [whitelistActive, setWhitelistActive] = useState(false);
+  const [whitelistedStudents, setWhitelistedStudents] = useState([]);
+  const [showWhitelistModal, setShowWhitelistModal] = useState(false);
+  const fileInputRef = useRef(null);
 
   const pollingInterval = 5000; // 5 seconds
 
+  // Function to handle the CSV file upload
+  const handleWhitelistUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file || !file.name.endsWith(".csv")) {
+      toast.error(t("PleaseSelectCSVFile"));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const rows = text.split("\n");
+
+        // Skip header row if present
+        const dataRows = rows[0].includes("email") ? rows.slice(1) : rows;
+
+        // Basic email regex pattern
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        const students = [];
+
+        dataRows.forEach((row) => {
+          const columns = row.split(/[\t,]/); // Support both tab and comma separators
+
+          // Find email column - should be index 5 based on the provided format
+          if (columns.length > 5) {
+            const email = columns[5].trim();
+            if (email && emailRegex.test(email)) {
+              students.push({ email });
+            }
+          }
+        });
+
+        if (students.length === 0) {
+          toast.error(
+            t("NoValidEmailsFound") || "No valid emails found in the CSV file"
+          );
+          return;
+        }
+
+        // Send the whitelist to the backend
+        updateSessionWhitelist(students);
+      } catch (error) {
+        console.error("Error processing CSV:", error);
+        toast.error(t("ErrorProcessingCSV") || "Error processing CSV file");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Function to update the session whitelist on the backend
+  const updateSessionWhitelist = async (students) => {
+    try {
+      // Call the API to update the whitelist
+      await sessionService.updateWhitelist(
+        course_id,
+        exam_id,
+        session_id,
+        students
+      );
+
+      setWhitelistedStudents(students);
+      setWhitelistActive(true);
+      toast.success(
+        t("WhitelistUpdated", { count: students.length }) ||
+          `Whitelist updated with ${students.length} student emails`
+      );
+
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      console.error("Error updating whitelist:", error);
+      toast.error(t("ErrorUpdatingWhitelist") || "Error updating whitelist");
+    }
+  };
+
+  // Function to clear the whitelist
+  const clearWhitelist = async () => {
+    try {
+      // Call API to clear whitelist
+      await sessionService.clearWhitelist(course_id, exam_id, session_id);
+
+      setWhitelistedStudents([]);
+      setWhitelistActive(false);
+      toast.success(t("WhitelistCleared"));
+    } catch (error) {
+      console.error("Error clearing whitelist:", error);
+      toast.error(t("ErrorClearingWhitelist"));
+    }
+  };
+
+  // Function to show the whitelist details
+  const showWhitelistDetails = () => {
+    setShowWhitelistModal(true);
+  };
+
   const formatDateTime = (dateTimeStr) => {
     if (!dateTimeStr || dateTimeStr === "null") return "N/A";
-    
+
     try {
       const date = new Date(dateTimeStr);
       // Check if date is valid
@@ -46,35 +158,41 @@ export default function SessionClientPage() {
 
   const formatRemainingTime = (startTimeStr, sessionUser) => {
     if (!startTimeStr || startTimeStr === "null") return "Not started";
-    if(sessionUser.start_time && sessionUser.end_time) return "Completed";
-    
+    if (sessionUser.start_time && sessionUser.end_time) return "Completed";
+
     try {
       const startTime = new Date(startTimeStr);
       if (isNaN(startTime.getTime())) return "Invalid time";
-      
+
       const now = new Date();
-      
+
       const durationSeconds = session?.duration || 60;
       const durationMs = durationSeconds * 1000;
       const extensionSeconds = sessionUser.changed_time || 0;
       const extensionMs = extensionSeconds * 1000;
-      
-      const expectedEndTime = new Date(startTime.getTime() + durationMs + extensionMs);
-      
+
+      const expectedEndTime = new Date(
+        startTime.getTime() + durationMs + extensionMs
+      );
+
       // Calculate remaining time
       const remainingMs = expectedEndTime - now;
-      
+
       if (remainingMs <= 0) {
         return <span className="text-red-600 font-bold">Time's up!</span>;
       }
 
       const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-      const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+      const minutes = Math.floor(
+        (remainingMs % (1000 * 60 * 60)) / (1000 * 60)
+      );
       const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
-      
-      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      
-      if (remainingMs < 5 * 60 * 1000) { 
+
+      const timeStr = `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+      if (remainingMs < 5 * 60 * 1000) {
         return <span className="text-red-600">{timeStr}</span>;
       } else if (remainingMs < 15 * 60 * 1000) {
         return <span className="text-orange-500">{timeStr}</span>;
@@ -87,29 +205,31 @@ export default function SessionClientPage() {
     }
   };
 
-
   const fetchSessionUsers = useCallback(async () => {
     try {
       const sessionUsersData = await sessionService.getSessionUsers(session_id);
-      
+
       const enhancedSessionUsers = await Promise.all(
         sessionUsersData.map(async (sessionUser) => {
           try {
             const userData = await userService.getUser(sessionUser.user_nmec);
             return {
               ...sessionUser,
-              user: userData
+              user: userData,
             };
           } catch (error) {
-            console.error(`Error fetching user ${sessionUser.user_nmec}:`, error);
+            console.error(
+              `Error fetching user ${sessionUser.user_nmec}:`,
+              error
+            );
             return {
               ...sessionUser,
-              user: { name: "Unknown User" }
+              user: { name: "Unknown User" },
             };
           }
         })
       );
-      
+
       setSessionUsers(enhancedSessionUsers);
     } catch (error) {
       console.error("Error fetching session users:", error);
@@ -121,19 +241,22 @@ export default function SessionClientPage() {
     const fetchInitialData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Get session details
-        const sessionData = await sessionService.getSession(course_id, exam_id, session_id);
+        const sessionData = await sessionService.getSession(
+          course_id,
+          exam_id,
+          session_id
+        );
         if (!sessionData) {
           router.push(notFound());
           return;
         }
-        
+
         setSession(sessionData);
-        
+
         // Get initial session users
         await fetchSessionUsers();
-        
       } catch (error) {
         console.error("Error fetching initial data:", error);
         setError(true);
@@ -141,10 +264,9 @@ export default function SessionClientPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchInitialData();
   }, [course_id, exam_id, session_id, router, fetchSessionUsers]);
-
 
   useEffect(() => {
     // Only start polling if we have the initial data loaded
@@ -153,7 +275,7 @@ export default function SessionClientPage() {
       const intervalId = setInterval(() => {
         fetchSessionUsers();
       }, pollingInterval);
-      
+
       // Clean up the interval when component unmounts
       return () => clearInterval(intervalId);
     }
@@ -161,17 +283,20 @@ export default function SessionClientPage() {
 
   useEffect(() => {
     const timerInterval = setInterval(() => {
-      setElapsedTimes(prevTimes => {
+      setElapsedTimes((prevTimes) => {
         const newRemainingTimes = {};
-        sessionUsers.forEach(user => {
+        sessionUsers.forEach((user) => {
           if (user.start_time && !user.end_time) {
-            newRemainingTimes[user.id] = formatRemainingTime(user.start_time, user);
+            newRemainingTimes[user.id] = formatRemainingTime(
+              user.start_time,
+              user
+            );
           }
         });
         return newRemainingTimes;
       });
     }, 1000);
-    
+
     return () => clearInterval(timerInterval);
   }, [sessionUsers]);
 
@@ -180,7 +305,11 @@ export default function SessionClientPage() {
   }
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">{t('Loading')}...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        {t("Loading")}...
+      </div>
+    );
   }
 
   if (!session) {
@@ -191,16 +320,16 @@ export default function SessionClientPage() {
   const handleStartButtonClick = () => {
     setShowStartDialog(true);
   };
-  
+
   const handleEndButtonClick = () => {
     setShowEndDialog(true);
   };
-  
+
   const handleStartConfirm = () => {
     setShowStartDialog(false);
     handleSendSessionStart();
   };
-  
+
   const handleEndConfirm = () => {
     setShowEndDialog(false);
     handleSendSessionEnd();
@@ -208,20 +337,24 @@ export default function SessionClientPage() {
 
   const handleSendSessionStart = async () => {
     try {
-      const startButton = document.getElementById('start-button');
+      const startButton = document.getElementById("start-button");
       if (startButton) startButton.disabled = true;
-      const result = await sessionService.startSession(course_id, exam_id, session_id);
+      const result = await sessionService.startSession(
+        course_id,
+        exam_id,
+        session_id
+      );
 
-      setSession(prevSession => ({
+      setSession((prevSession) => ({
         ...prevSession,
-        is_started: true
+        is_started: true,
       }));
 
       toast.success("Exam started successfully");
     } catch (error) {
       toast.error(`Failed to start exam: ${error.message || "Unknown error"}`);
     } finally {
-      const startButton = document.getElementById('start-button');
+      const startButton = document.getElementById("start-button");
       if (startButton) startButton.disabled = false;
     }
   };
@@ -230,14 +363,18 @@ export default function SessionClientPage() {
     try {
       await sessionService.endSession(course_id, exam_id, session_id);
 
-      setSession(prevSession => ({
+      setSession((prevSession) => ({
         ...prevSession,
-        is_ended: true
+        is_ended: true,
       }));
 
-      const refreshedSession = await sessionService.getSession(course_id, exam_id, session_id);
-      console.log('refreshedSession:', refreshedSession);
-      if(refreshedSession) {
+      const refreshedSession = await sessionService.getSession(
+        course_id,
+        exam_id,
+        session_id
+      );
+      console.log("refreshedSession:", refreshedSession);
+      if (refreshedSession) {
         setSession(refreshedSession);
       }
       toast.success("Exam ended successfully");
@@ -252,15 +389,15 @@ export default function SessionClientPage() {
         toast.error("Please enter a message to broadcast");
         return;
       }
-      
+
       // Disable button during submission
-      const sendButton = document.getElementById('send-button');
+      const sendButton = document.getElementById("send-button");
       if (sendButton) sendButton.disabled = true;
-      
+
       // Show loading toast
       const toastId = toast.loading("Sending broadcast...");
-      
-      const messagePromises = sessionUsers.map(user => 
+
+      const messagePromises = sessionUsers.map((user) =>
         sessionService.sendBroadcastMessage(
           user.user_nmec,
           broadcastMessage,
@@ -269,19 +406,21 @@ export default function SessionClientPage() {
           session_id
         )
       );
-      
+
       await Promise.all(messagePromises);
 
       // Dismiss loading toast and show success
       toast.dismiss(toastId);
       toast.success("Message sent successfully");
-      
+
       // Clear the input field after successful broadcast
       setBroadcastMessage("");
     } catch (error) {
-      toast.error(`Failed to send message: ${error.message || "Unknown error"}`);
+      toast.error(
+        `Failed to send message: ${error.message || "Unknown error"}`
+      );
     } finally {
-      const sendButton = document.getElementById('send-button');
+      const sendButton = document.getElementById("send-button");
       if (sendButton) sendButton.disabled = false;
     }
   };
@@ -291,20 +430,22 @@ export default function SessionClientPage() {
   };
 
   const handleViewUserDetails = (sessionUser) => {
-    router.push(`/course/${course_id}/${exam_id}/${session_id}/${sessionUser.user_nmec}`);
+    router.push(
+      `/course/${course_id}/${exam_id}/${session_id}/${sessionUser.user_nmec}`
+    );
   };
 
   // Just like Broadcast message
   const handleFetchSubmissions = async () => {
-    const fetchButton = document.getElementById('fetch-button');
+    const fetchButton = document.getElementById("fetch-button");
     try {
       if (fetchButton) {
         fetchButton.disabled = true;
-        fetchButton.innerText = 'Fetching...';
+        fetchButton.innerText = "Fetching...";
       }
-      
+
       const toastId = toast.loading("Fetching submissions...");
-      const fetchPromises = sessionUsers.map(sessionUser =>
+      const fetchPromises = sessionUsers.map((sessionUser) =>
         sessionService.fetchSubmissions(
           sessionUser.user_nmec,
           course_id,
@@ -319,60 +460,59 @@ export default function SessionClientPage() {
 
       toast.dismiss(toastId);
       toast.success("Submissions fetched successfully");
-    }
-    catch (error) {
-      console.error('Error fetching submissions:', error);
-      alert(`Fetch failed: ${error.message || 'Unknown error'}`);
+    } catch (error) {
+      console.error("Error fetching submissions:", error);
+      alert(`Fetch failed: ${error.message || "Unknown error"}`);
     } finally {
       if (fetchButton) {
         fetchButton.disabled = false;
-        fetchButton.innerText = 'Fetch Submissions';
+        fetchButton.innerText = "Fetch Submissions";
       }
     }
-    
   };
 
   const handleDownloadSubmissions = async () => {
-    const downloadButton = document.getElementById('download-button');
+    const downloadButton = document.getElementById("download-button");
     try {
       if (downloadButton) {
         downloadButton.disabled = true;
-        downloadButton.innerText = 'Downloading...';
+        downloadButton.innerText = "Downloading...";
       }
-      
+
       await sessionService.downloadSubmissions(course_id, exam_id, session_id);
-      
-      toast.success('Submissions downloaded successfully');
+
+      toast.success("Submissions downloaded successfully");
     } catch (error) {
-      console.error('Error downloading submissions:', error);
-      alert(`Download failed: ${error.message || 'Unknown error'}`);
+      console.error("Error downloading submissions:", error);
+      alert(`Download failed: ${error.message || "Unknown error"}`);
     } finally {
       if (downloadButton) {
         downloadButton.disabled = false;
-        downloadButton.innerText = 'Download Submissions';
+        downloadButton.innerText = "Download Submissions";
       }
     }
   };
 
-
   const handleExtendTimeAll = async () => {
     try {
-      if(sessionUsers.length === 0) {
+      if (sessionUsers.length === 0) {
         toast.error("No users to extend time for");
         return;
       }
 
       const seconds = allUsersExtensionMinutes * 60;
-      const toastId = toast.loading(`Extending time for all users by ${allUsersExtensionMinutes} minutes...`);
+      const toastId = toast.loading(
+        `Extending time for all users by ${allUsersExtensionMinutes} minutes...`
+      );
 
-      setSessionUsers(prevUsers => 
-        prevUsers.map(user => ({
+      setSessionUsers((prevUsers) =>
+        prevUsers.map((user) => ({
           ...user,
-          changed_time: (user.changed_time || 0) + seconds
+          changed_time: (user.changed_time || 0) + seconds,
         }))
       );
-      
-      const extensionPromises = sessionUsers.map(sessionUser =>
+
+      const extensionPromises = sessionUsers.map((sessionUser) =>
         sessionService.extendUserTime(
           sessionUser.user_nmec,
           seconds,
@@ -388,10 +528,16 @@ export default function SessionClientPage() {
       await fetchSessionUsers();
 
       toast.dismiss(toastId);
-      toast.success(`Time extended successfully for all users by ${allUsersExtensionMinutes} minutes`);
+      toast.success(
+        `Time extended successfully for all users by ${allUsersExtensionMinutes} minutes`
+      );
     } catch (error) {
       await fetchSessionUsers();
-      toast.error(`Failed to extend time for all users: ${error.message || "Unknown error"}`);
+      toast.error(
+        `Failed to extend time for all users: ${
+          error.message || "Unknown error"
+        }`
+      );
     }
   };
 
@@ -399,31 +545,56 @@ export default function SessionClientPage() {
     <div className="min-h-screen bg-light-gray">
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">{session?.name}</h1>
-        
 
         {/* Generate Code Section */}
-        <div className="flex flex-col items-center justify-center mb-12 mt-8">
+        <div className="flex flex-col items-center justify-center mb-6 mt-8">
           <div className="flex flex-col items-center gap-6 p-8 rounded-lg bg-gray-50 w-full max-w-2xl">
             <div className="flex flex-col items-center gap-3">
-              <span className="text-sm text-gray-500">{t('JoinCode')}:</span>
+              <span className="text-sm text-gray-500">{t("JoinCode")}:</span>
               <div className="flex items-center gap-3">
-                <div className={`text-4xl font-bold transition-all duration-200 ${!showJoinCode ? "blur-md select-none" : ""}`}>
+                <div
+                  className={`text-4xl font-bold transition-all duration-200 ${
+                    !showJoinCode ? "blur-md select-none" : ""
+                  }`}
+                >
                   {showJoinCode ? session?.join_code : "••••••"}
                 </div>
-                <button 
+                <button
                   onClick={() => setShowJoinCode(!showJoinCode)}
                   className="flex items-center justify-center p-2 rounded-full hover:bg-gray-200 transition-colors"
-                  aria-label={showJoinCode ? t('HideJoinCode') : t('ShowJoinCode')}
+                  aria-label={
+                    showJoinCode ? t("HideJoinCode") : t("ShowJoinCode")
+                  }
                 >
                   {showJoinCode ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
                       <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
                       <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
                       <line x1="2" y1="2" x2="22" y2="22"></line>
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
@@ -431,39 +602,92 @@ export default function SessionClientPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {showJoinCode ? t('ClickEyeToHide') : t('ClickEyeToReveal')}
+                {showJoinCode ? t("ClickEyeToHide") : t("ClickEyeToReveal")}
               </p>
             </div>
           </div>
         </div>
 
+        {/* Whitelist Upload Button */}
+        <div className="flex flex-col items-center justify-center mb-12">
+          <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-gray-50 w-full max-w-2xl">
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".csv"
+                onChange={handleWhitelistUpload}
+                className="hidden"
+                id="whitelist-upload"
+              />
+              <Button
+                className={`${
+                  whitelistActive
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-gray-600 hover:bg-gray-700"
+                }`}
+                onClick={() =>
+                  document.getElementById("whitelist-upload").click()
+                }
+              >
+                {whitelistActive ? t("UpdateWhitelist") : t("UploadWhitelist")}
+              </Button>
+
+              {whitelistActive && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={showWhitelistDetails}
+                    className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                  >
+                    {t("ViewWhitelist")} ({whitelistedStudents.length})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={clearWhitelist}
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    {t("ClearWhitelist")}
+                  </Button>
+                </>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              {whitelistActive
+                ? t("WhitelistActive", { count: whitelistedStudents.length })
+                : t("UploadCSVWithStudentEmails") ||
+                  "Upload a CSV file containing student emails"}
+            </p>
+          </div>
+        </div>
+
         {/* Session Actions */}
         <div className="flex justify-center gap-4 mb-8">
-          <Button 
+          <Button
             id="start-button"
             className="bg-[#5BA87A] hover:bg-[#4A8B65]"
             onClick={handleStartButtonClick}
             disabled={session?.is_started}
           >
-            {t('StartSession')}
+            {t("StartSession")}
           </Button>
-          <Button 
+          <Button
             id="end-button"
             className="bg-[#993333] hover:bg-[#7A2929]"
             onClick={handleEndButtonClick}
             disabled={!session?.is_started || session?.is_ended}
           >
-            {t('EndSession')}
+            {t("EndSession")}
           </Button>
         </div>
-      
+
         {/* Broadcast Message */}
         <div className="bg-gray-100 p-3 rounded-lg mb-8">
           <div className="flex items-center gap-2">
-            <span className="font-medium">{t('BroadcastMessage')}:</span>
-            <input 
-              type="text" 
-              value={broadcastMessage} 
+            <span className="font-medium">{t("BroadcastMessage")}:</span>
+            <input
+              type="text"
+              value={broadcastMessage}
               onChange={(e) => setBroadcastMessage(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -471,44 +695,48 @@ export default function SessionClientPage() {
                 }
               }}
               className="flex-grow border p-1 rounded"
-              placeholder={t('EnterMessageBroadcast')}
+              placeholder={t("EnterMessageBroadcast")}
             />
-            <Button 
+            <Button
               id="send-button"
               className="bg-[#5BA87A] hover:bg-[#4A8B65] whitespace-nowrap"
               onClick={handleSendBroadcastMessage}
             >
-              {t('Send')}
+              {t("Send")}
             </Button>
-            <Button 
+            <Button
               id="clear-button"
               className="bg-[#993333] hover:bg-[#7A2929] whitespace-nowrap"
               onClick={handleClearBroadcast}
             >
-              {t('Clear')}
+              {t("Clear")}
             </Button>
           </div>
         </div>
         {/* Extend Time for All Users */}
         <div className="bg-gray-100 p-3 rounded-lg mb-8">
           <div className="flex items-center gap-2">
-            <span className="font-medium">{t('ExtendTimeAllUsers')}:</span>
-            <input 
+            <span className="font-medium">{t("ExtendTimeAllUsers")}:</span>
+            <input
               type="number"
               min="1"
-              value={allUsersExtensionMinutes} 
-              onChange={(e) => setAllUsersExtensionMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+              value={allUsersExtensionMinutes}
+              onChange={(e) =>
+                setAllUsersExtensionMinutes(
+                  Math.max(1, parseInt(e.target.value) || 1)
+                )
+              }
               className="w-16 border p-1 rounded text-center"
               placeholder="5"
             />
-            <span className="mr-2">{t('minutes')}</span>
-            <Button 
+            <span className="mr-2">{t("minutes")}</span>
+            <Button
               id="extend-all-button"
               className="bg-blue-500 hover:bg-blue-700 whitespace-nowrap"
               onClick={handleExtendTimeAll}
               disabled={sessionUsers.length === 0}
             >
-              {t('ExtendTimeForAll')}
+              {t("ExtendTimeForAll")}
             </Button>
           </div>
         </div>
@@ -516,13 +744,13 @@ export default function SessionClientPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">{t('StudentNMEC')}</TableHead>
-              <TableHead>{t('StudentName')}</TableHead>
-              <TableHead>{t('DeviceID')}</TableHead>
-              <TableHead>{t('StartTime')}</TableHead>
-              <TableHead>{t('RemainingTime')}</TableHead>
-              <TableHead>{t('EndTime')}</TableHead>
-              <TableHead>{t('Status')}</TableHead>
+              <TableHead className="w-16">{t("StudentNMEC")}</TableHead>
+              <TableHead>{t("StudentName")}</TableHead>
+              <TableHead>{t("DeviceID")}</TableHead>
+              <TableHead>{t("StartTime")}</TableHead>
+              <TableHead>{t("RemainingTime")}</TableHead>
+              <TableHead>{t("EndTime")}</TableHead>
+              <TableHead>{t("Status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -530,32 +758,46 @@ export default function SessionClientPage() {
               sessionUsers.map((sessionUser) => (
                 <TableRow key={sessionUser.id}>
                   <TableCell>{sessionUser.user_nmec}</TableCell>
-                  <TableCell>{sessionUser.user?.name || t('UnknownUser')}</TableCell>
-                  <TableCell>{sessionUser.device_id}</TableCell>
-                  <TableCell>{formatDateTime(sessionUser.start_time)}</TableCell>
                   <TableCell>
-                  {sessionUser.start_time && !sessionUser.end_time ? (
-                    <span className="font-mono bg-green-100 px-2 py-1 rounded text-green-800 font-medium">
-                      {elapsedTimes[sessionUser.id] || formatRemainingTime(sessionUser.start_time, sessionUser)}
-                    </span>
-                  ) : sessionUser.end_time ? (
-                    t('Completed')
-                  ) : (
-                    t('NotStarted')
-                  )}
+                    {sessionUser.user?.name || t("UnknownUser")}
+                  </TableCell>
+                  <TableCell>{sessionUser.device_id}</TableCell>
+                  <TableCell>
+                    {formatDateTime(sessionUser.start_time)}
+                  </TableCell>
+                  <TableCell>
+                    {sessionUser.start_time && !sessionUser.end_time ? (
+                      <span className="font-mono bg-green-100 px-2 py-1 rounded text-green-800 font-medium">
+                        {elapsedTimes[sessionUser.id] ||
+                          formatRemainingTime(
+                            sessionUser.start_time,
+                            sessionUser
+                          )}
+                      </span>
+                    ) : sessionUser.end_time ? (
+                      t("Completed")
+                    ) : (
+                      t("NotStarted")
+                    )}
                   </TableCell>
                   <TableCell>{formatDateTime(sessionUser.end_time)}</TableCell>
-                  <TableCell>{!sessionUser.start_time ? t('NotStarted') : sessionUser.end_time ? t('Completed') : t('InProgress')}</TableCell>
+                  <TableCell>
+                    {!sessionUser.start_time
+                      ? t("NotStarted")
+                      : sessionUser.end_time
+                      ? t("Completed")
+                      : t("InProgress")}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-4">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleViewUserDetails(sessionUser)}
-                        title={t('ViewUserDetails')}
+                        title={t("ViewUserDetails")}
                         className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                        >
-                        {t('ViewUser')}
+                      >
+                        {t("ViewUser")}
                       </Button>
                     </div>
                   </TableCell>
@@ -564,41 +806,86 @@ export default function SessionClientPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  {t('NoUsersInSession')}
+                  {t("NoUsersInSession")}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center mt-8">
           <BackButton />
-          <Button 
+          <Button
             className="ml-auto mr-4"
             id="fetch-button"
             onClick={handleFetchSubmissions}
           >
-            {t('FetchSubmissions')}
+            {t("FetchSubmissions")}
           </Button>
-          <Button 
+          <Button
             type="button"
             id="download-button"
             onClick={handleDownloadSubmissions}
           >
-            {t('DownloadSubmissions')}
+            {t("DownloadSubmissions")}
           </Button>
         </div>
-          <StartSessionDialog 
-            open={showStartDialog} 
-            onOpenChange={setShowStartDialog} 
-            onConfirm={handleStartConfirm} 
-          />
-          
-          <EndSessionDialog 
-            open={showEndDialog} 
-            onOpenChange={setShowEndDialog}
-            onConfirm={handleEndConfirm}
-          />
+        <StartSessionDialog
+          open={showStartDialog}
+          onOpenChange={setShowStartDialog}
+          onConfirm={handleStartConfirm}
+        />
+
+        <EndSessionDialog
+          open={showEndDialog}
+          onOpenChange={setShowEndDialog}
+          onConfirm={handleEndConfirm}
+        />
+        {showWhitelistModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-auto">
+              <h3 className="text-xl font-bold mb-4">
+                {t("WhitelistedStudents")}
+              </h3>
+
+              {whitelistedStudents.length > 0 ? (
+                <div className="max-h-[50vh] overflow-y-auto mb-4">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border p-2 text-left">
+                          {t("StudentEmail") || "Student Email"}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {whitelistedStudents.map((student, index) => (
+                        <tr key={index} className="border-b">
+                          <td className="border p-2">{student.email}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-center py-4">{t("NoStudentsWhitelisted")}</p>
+              )}
+
+              <div className="flex justify-end gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWhitelistModal(false)}
+                >
+                  {t("Close")}
+                </Button>
+                <Button variant="destructive" onClick={clearWhitelist}>
+                  {t("ClearWhitelist")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <Toaster richColors />
     </div>
