@@ -144,7 +144,7 @@ export default function CreateSessionForm() {
 
       if (hasFiles && hasLink) {
         setFormError(
-          "You cannot provide both files and an exam link. Please choose one option."
+          t("Link_File_Error")
         );
         return;
       }

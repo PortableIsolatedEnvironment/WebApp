@@ -125,6 +125,6 @@
     "Date_Warning": "Date Required",
     "Room_Warning": "Room Required",
     "Duration_Warning": "Duration Required",
-    "URL_Validation": "URL Validation"
-
+    "URL_Validation": "URL Validation",
+    "Link_File_Error": "You cannot provide both files and an exam link; Please choose one option"
 }
