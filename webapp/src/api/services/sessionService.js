@@ -174,7 +174,7 @@ export const sessionService = {
             }
           }
         }
-  
+
         const response = await fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId), {
           method: "PUT",
           body: formData,
@@ -387,32 +387,4 @@ export const sessionService = {
         }
       },
 
-      updateWhitelist: async (courseId, examId, sessionId, students) => {
-        try {
-          const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/whitelist`, {
-            method: "POST",
-            body: JSON.stringify({ students }),
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            }
-          });
-          return response;
-        } catch (error) {
-          console.error("Failed to update whitelist:", error);
-          throw error;
-        }
-      },
-      
-      clearWhitelist: async (courseId, examId, sessionId) => {
-        try {
-          const response = await fetchApi(`${ENDPOINTS.SESSION(courseId, examId, sessionId)}/whitelist`, {
-            method: "DELETE",
-          });
-          return response;
-        } catch (error) {
-          console.error("Failed to clear whitelist:", error);
-          throw error;
-        }
-      },
 };

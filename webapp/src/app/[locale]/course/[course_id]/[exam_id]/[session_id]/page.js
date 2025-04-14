@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -36,111 +36,8 @@ export default function SessionClientPage() {
   const [showJoinCode, setShowJoinCode] = useState(false);
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [showEndDialog, setShowEndDialog] = useState(false);
-  const [whitelistActive, setWhitelistActive] = useState(false);
-  const [whitelistedStudents, setWhitelistedStudents] = useState([]);
-  const [showWhitelistModal, setShowWhitelistModal] = useState(false);
-  const fileInputRef = useRef(null);
 
   const pollingInterval = 5000; // 5 seconds
-
-  // Function to handle the CSV file upload
-  const handleWhitelistUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file || !file.name.endsWith(".csv")) {
-      toast.error(t("PleaseSelectCSVFile"));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target.result;
-        const rows = text.split("\n");
-
-        // Skip header row if present
-        const dataRows = rows[0].includes("email") ? rows.slice(1) : rows;
-
-        // Basic email regex pattern
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        const students = [];
-
-        dataRows.forEach((row) => {
-          const columns = row.split(/[\t,]/); // Support both tab and comma separators
-
-          // Find email column - should be index 5 based on the provided format
-          if (columns.length > 5) {
-            const email = columns[5].trim();
-            if (email && emailRegex.test(email)) {
-              students.push({ email });
-            }
-          }
-        });
-
-        if (students.length === 0) {
-          toast.error(
-            t("NoValidEmailsFound") || "No valid emails found in the CSV file"
-          );
-          return;
-        }
-
-        // Send the whitelist to the backend
-        updateSessionWhitelist(students);
-      } catch (error) {
-        console.error("Error processing CSV:", error);
-        toast.error(t("ErrorProcessingCSV") || "Error processing CSV file");
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  // Function to update the session whitelist on the backend
-  const updateSessionWhitelist = async (students) => {
-    try {
-      // Call the API to update the whitelist
-      await sessionService.updateWhitelist(
-        course_id,
-        exam_id,
-        session_id,
-        students
-      );
-
-      setWhitelistedStudents(students);
-      setWhitelistActive(true);
-      toast.success(
-        t("WhitelistUpdated", { count: students.length }) ||
-          `Whitelist updated with ${students.length} student emails`
-      );
-
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (error) {
-      console.error("Error updating whitelist:", error);
-      toast.error(t("ErrorUpdatingWhitelist") || "Error updating whitelist");
-    }
-  };
-
-  // Function to clear the whitelist
-  const clearWhitelist = async () => {
-    try {
-      // Call API to clear whitelist
-      await sessionService.clearWhitelist(course_id, exam_id, session_id);
-
-      setWhitelistedStudents([]);
-      setWhitelistActive(false);
-      toast.success(t("WhitelistCleared"));
-    } catch (error) {
-      console.error("Error clearing whitelist:", error);
-      toast.error(t("ErrorClearingWhitelist"));
-    }
-  };
-
-  // Function to show the whitelist details
-  const showWhitelistDetails = () => {
-    setShowWhitelistModal(true);
-  };
 
   const formatDateTime = (dateTimeStr) => {
     if (!dateTimeStr || dateTimeStr === "null") return "N/A";
@@ -608,59 +505,6 @@ export default function SessionClientPage() {
           </div>
         </div>
 
-        {/* Whitelist Upload Button */}
-        <div className="flex flex-col items-center justify-center mb-12">
-          <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-gray-50 w-full max-w-2xl">
-            <div className="flex items-center gap-3">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".csv"
-                onChange={handleWhitelistUpload}
-                className="hidden"
-                id="whitelist-upload"
-              />
-              <Button
-                className={`${
-                  whitelistActive
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-600 hover:bg-gray-700"
-                }`}
-                onClick={() =>
-                  document.getElementById("whitelist-upload").click()
-                }
-              >
-                {whitelistActive ? t("UpdateWhitelist") : t("UploadWhitelist")}
-              </Button>
-
-              {whitelistActive && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={showWhitelistDetails}
-                    className="border-blue-300 text-blue-600 hover:bg-blue-50"
-                  >
-                    {t("ViewWhitelist")} ({whitelistedStudents.length})
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={clearWhitelist}
-                    className="border-red-300 text-red-600 hover:bg-red-50"
-                  >
-                    {t("ClearWhitelist")}
-                  </Button>
-                </>
-              )}
-            </div>
-            <p className="text-xs text-gray-500">
-              {whitelistActive
-                ? t("WhitelistActive", { count: whitelistedStudents.length })
-                : t("UploadCSVWithStudentEmails") ||
-                  "Upload a CSV file containing student emails"}
-            </p>
-          </div>
-        </div>
-
         {/* Session Actions */}
         <div className="flex justify-center gap-4 mb-8">
           <Button
@@ -842,50 +686,6 @@ export default function SessionClientPage() {
           onOpenChange={setShowEndDialog}
           onConfirm={handleEndConfirm}
         />
-        {showWhitelistModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-auto">
-              <h3 className="text-xl font-bold mb-4">
-                {t("WhitelistedStudents")}
-              </h3>
-
-              {whitelistedStudents.length > 0 ? (
-                <div className="max-h-[50vh] overflow-y-auto mb-4">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="border p-2 text-left">
-                          {t("StudentEmail") || "Student Email"}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {whitelistedStudents.map((student, index) => (
-                        <tr key={index} className="border-b">
-                          <td className="border p-2">{student.email}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-center py-4">{t("NoStudentsWhitelisted")}</p>
-              )}
-
-              <div className="flex justify-end gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowWhitelistModal(false)}
-                >
-                  {t("Close")}
-                </Button>
-                <Button variant="destructive" onClick={clearWhitelist}>
-                  {t("ClearWhitelist")}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
       <Toaster richColors />
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   CalendarIcon,
   Upload,
@@ -67,9 +67,10 @@ export default function EditSessionForm() {
   const [sessionData, setSessionData] = useState(null);
   const [activeTab, setActiveTab] = useState("files");
   const [formError, setFormError] = useState("");
-  // New state for link whitelist
   const [whitelistLink, setWhitelistLink] = useState("");
   const [whitelistLinks, setWhitelistLinks] = useState([]);
+  const [whitelistedStudents, setWhitelistedStudents] = useState([]);
+  const fileInputRef = useRef(null);
 
   const params = useParams();
   const router = useRouter();
@@ -104,7 +105,6 @@ export default function EditSessionForm() {
     );
   };
 
-  // New functions for link whitelist
   const isValidUrl = (string) => {
     try {
       const url = new URL(string);
@@ -123,6 +123,107 @@ export default function EditSessionForm() {
 
   const handleRemoveWhitelistLink = (indexToRemove) => {
     setWhitelistLinks(whitelistLinks.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleWhitelistUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file || !file.name.endsWith(".csv")) {
+      toast.error(t("PleaseSelectCSVFile") || "Please select a valid CSV file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const rows = text.split("\n");
+
+        const dataRows = rows[0].includes("email") ? rows.slice(1) : rows;
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        const uniqueEmails = new Set();
+        const students = [];
+        const duplicates = [];
+
+        dataRows.forEach((row) => {
+          const columns = row.split(/[\t,]/);
+
+          if (columns.length > 5) {
+            const email = columns[5].trim();
+            if (email && emailRegex.test(email)) {
+              if (!uniqueEmails.has(email.toLowerCase())) {
+                uniqueEmails.add(email.toLowerCase());
+                students.push({ email });
+              } else {
+                duplicates.push(email);
+              }
+            }
+          }
+        });
+
+        if (students.length === 0) {
+          toast.error(
+            t("NoValidEmailsFound") || "No valid emails found in the CSV file"
+          );
+          return;
+        }
+
+        setWhitelistedStudents(students);
+
+        if (duplicates.length > 0) {
+          toast.success(
+            t("WhitelistUpdatedWithDuplicates", { 
+              count: students.length, 
+              duplicates: duplicates.length 
+            }) || 
+            `Whitelist updated with ${students.length} student emails. ${duplicates.length} duplicate(s) were removed.`
+          );
+        } else {
+          toast.success(
+            t("WhitelistUpdated", { count: students.length }) ||
+            `Whitelist updated with ${students.length} student emails`
+          );
+        }
+
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } catch (error) {
+        console.error("Error processing CSV:", error);
+        toast.error(t("ErrorProcessingCSV") || "Error processing CSV file");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleAddStudent = () => {
+    const studentEmail = document.getElementById("student-email").value.trim();
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(studentEmail)) {
+      toast.error(t("InvalidEmailFormat") || "Invalid email format");
+      return;
+    }
+    
+    if (whitelistedStudents.some(student => 
+      student.email.toLowerCase() === studentEmail.toLowerCase())) {
+      toast.error(t("EmailAlreadyInList") || "This email is already in the list");
+      return;
+    }
+    
+    setWhitelistedStudents([...whitelistedStudents, { email: studentEmail }]);
+    
+    document.getElementById("student-email").value = "";
+  };
+
+  const handleRemoveStudent = (index) => {
+    setWhitelistedStudents(whitelistedStudents.filter((_, i) => i !== index));
+  };
+
+  const clearWhitelist = () => {
+    setWhitelistedStudents([]);
+    toast.success(t("WhitelistCleared") || "Student whitelist cleared");
   };
 
   const form = useForm({
@@ -146,9 +247,12 @@ export default function EditSessionForm() {
         );
         setSessionData(data);
 
-        // Load existing whitelist links if available
         if (data.allowed_links && Array.isArray(data.allowed_links)) {
           setWhitelistLinks(data.allowed_links);
+        }
+        
+        if (data.allowed_students && Array.isArray(data.allowed_students)) {
+          setWhitelistedStudents(data.allowed_students.map(email => ({ email })));
         }
 
         if (data.exam_link && data.exam_link.trim() !== "") {
@@ -157,7 +261,7 @@ export default function EditSessionForm() {
           setActiveTab("files");
         }
 
-        let formattedDuration = "02:00"; // Default
+        let formattedDuration = "02:00";
         if (data.duration) {
           const totalSeconds = parseInt(data.duration);
 
@@ -230,7 +334,7 @@ export default function EditSessionForm() {
 
       const formattedDate = format(values.date, "yyyy-MM-dd");
 
-      let durationInSeconds = 7200; // Default 2 hours
+      let durationInSeconds = 7200;
 
       if (
         typeof values.duration === "string" &&
@@ -264,9 +368,13 @@ export default function EditSessionForm() {
       formData.append("exam_id", Number(exam_id));
       formData.append("course_id", course_id);
       
-      // Add allowed links to form data
       if (whitelistLinks.length > 0) {
         formData.append("allowed_links", JSON.stringify(whitelistLinks));
+      }
+      
+      if (whitelistedStudents.length > 0) {
+        const studentEmails = whitelistedStudents.map(student => student.email);
+        formData.append("allowed_students", JSON.stringify(studentEmails));
       }
 
       for (let [key, value] of formData.entries()) {
@@ -606,7 +714,6 @@ export default function EditSessionForm() {
             </Tabs>
           </div>
 
-          {/* New Link Whitelist Section */}
           <div className="border rounded-md p-4">
             <h3 className="font-medium mb-4">{t("Allowed Links") || "Allowed Links"}</h3>
             <div className="space-y-4">
@@ -614,17 +721,6 @@ export default function EditSessionForm() {
                 {t("The Links should start by https:// or http://") || "Add links that students are allowed to access during the exam."}
               </p>
               
-              {/* Display current whitelist links if available */}
-              {sessionData?.allowed_links && sessionData.allowed_links.length > 0 && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-md">
-                  <p className="text-sm font-medium">{t("Current Allowed Links") || "Current Allowed Links"}:</p>
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    {/* This will be replaced by the dynamic list below */}
-                  </div>
-                </div>
-              )}
-              
-              {/* Add whitelist links */}
               <div className="flex gap-2">
                 <div className="flex items-center flex-1">
                   <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -644,7 +740,6 @@ export default function EditSessionForm() {
                 </Button>
               </div>
               
-              {/* Display whitelist links */}
               {whitelistLinks.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm font-medium">{t("Whitelisted Links") || "Whitelisted Links"}:</p>
@@ -653,6 +748,7 @@ export default function EditSessionForm() {
                       <li key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
                         <span className="text-sm truncate max-w-[80%]">{link}</span>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveWhitelistLink(index)}
@@ -663,6 +759,94 @@ export default function EditSessionForm() {
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border rounded-md p-4">
+            <h3 className="font-medium mb-4">{t("Student Whitelist") || "Student Whitelist"}</h3>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("StudentWhitelistDescription") || "Add students who are allowed to join this session. Leave empty to allow all students."}
+              </p>
+              
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".csv"
+                    onChange={handleWhitelistUpload}
+                    className="hidden"
+                    id="whitelist-csv-upload"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => document.getElementById("whitelist-csv-upload").click()}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {t("UploadCSV") || "Upload CSV File"}
+                  </Button>
+                  
+                  {whitelistedStudents.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={clearWhitelist}
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                    >
+                      {t("ClearWhitelist") || "Clear Whitelist"}
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("CSVUploadHelp") || "Upload a CSV file containing student emails (column 6)"}
+                </p>
+              </div>
+              
+              <div className="mt-6">
+                <div className="flex gap-2">
+                  <Input
+                    id="student-email"
+                    placeholder="student@example.com"
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={handleAddStudent}
+                  >
+                    {t("AddStudent") || "Add Student"}
+                  </Button>
+                </div>
+              </div>
+              
+              {whitelistedStudents.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium">
+                      {t("WhitelistedStudents", { count: whitelistedStudents.length }) || 
+                       `Whitelisted Students (${whitelistedStudents.length})`}:
+                    </p>
+                  </div>
+                  <div className="mt-2 max-h-40 overflow-y-auto border rounded-md">
+                    <ul className="divide-y">
+                      {whitelistedStudents.map((student, index) => (
+                        <li key={index} className="flex items-center justify-between p-2">
+                          <span className="text-sm truncate max-w-[80%]">{student.email}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveStudent(index)}
+                            className="h-8 w-8 p-0 text-red-500"
+                          >
+                            ×
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>
