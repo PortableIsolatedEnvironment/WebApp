@@ -1,6 +1,35 @@
 import { fetchApi } from "@/api/client";
 import { ENDPOINTS  } from "@/api/endpoints";
 
+
+const validateFile = (file) => {
+  // Only check basic file type - the server will do comprehensive validation
+  const allowedTypes = [
+
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'image/png',
+    'image/jpeg',
+    'application/zip',
+    'application/octet-stream'
+  ];
+  
+  if (!allowedTypes.includes(file.type) && file.type !== '') {
+    throw new Error(`File ${file.name} is not an allowed type. Please select a document, image, or archive file.`);
+  }
+  
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
+  }
+  
+  return true;
+};
+
+
+
 export const sessionService = {
     getSessions: async (courseId, examId) => {
       try {
@@ -145,7 +174,7 @@ export const sessionService = {
             }
           }
         }
-  
+
         const response = await fetchApi(ENDPOINTS.SESSION(courseId, examId, sessionId), {
           method: "PUT",
           body: formData,
@@ -357,31 +386,5 @@ export const sessionService = {
           throw error;
         }
       },
+
 };
-
-
-const validateFile = (file) => {
-    // Only check basic file type - the server will do comprehensive validation
-    const allowedTypes = [
-
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain',
-      'image/png',
-      'image/jpeg',
-      'application/zip',
-      'application/octet-stream'
-    ];
-    
-    if (!allowedTypes.includes(file.type) && file.type !== '') {
-      throw new Error(`File ${file.name} is not an allowed type. Please select a document, image, or archive file.`);
-    }
-    
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
-    }
-    
-    return true;
-  };
