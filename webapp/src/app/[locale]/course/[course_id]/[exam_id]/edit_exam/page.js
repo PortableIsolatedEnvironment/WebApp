@@ -38,7 +38,6 @@ export default function EditExamForm() {
     },
   })
 
-  // Fetch the current exam data
   useEffect(() => {
     async function fetchExamData() {
       try {

@@ -216,7 +216,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
               {currentUser?.nmec && (
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">
-                    {t("Student ID")}:
+                    {t("NMEC")}:
                   </span>
                   <span className="text-sm font-mono bg-slate-100 px-2 py-0.5 rounded">
                     {currentUser.nmec}

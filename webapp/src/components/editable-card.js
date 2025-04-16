@@ -1,4 +1,4 @@
-'use client'; 
+"use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Router, Trash2 } from "lucide-react";
@@ -9,75 +9,87 @@ import { fetchApi } from "@/api/client";
 import { ENDPOINTS } from "@/api/endpoints";
 import { sessionService } from "@/api/services/sessionService";
 import { examService } from "@/api/services/examService";
+import { courseService } from "@/api/services/courseService";
 
-export default function TestCard({ 
-  name, 
-  description, 
-  link, 
-  edit_link, 
-  type = 'exam', // 'exam' or 'session'
-  courseId = '',
-  examId = '',
-  sessionId = '', // Only needed for session deletion
+export default function TestCard({
+  name,
+  description,
+  link,
+  edit_link,
+  type = "exam", // 'exam', 'session', or 'course' 
+  courseId = "",
+  examId = "",
+  sessionId = "", // Only needed for session deletion
   onDeleteSuccess, // Callback after successful deletion
-  })
- {
+}) {
   const router = useRouter();
-  const validType = ['exam', 'session'].includes(type) ? type : 'exam';
+  const validType = ["exam", "session", "course"].includes(type) ? type : "exam";
   if (validType !== type) {
-    console.error(`Invalid type prop "${type}" provided. Using "${validType}" instead.`);
+    console.error(
+      `Invalid type prop "${type}" provided. Using "${validType}" instead.`
+    );
   }
-  
+
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log("Delete button clicked", { type: validType, courseId, examId, sessionId });
-    
-    const confirmMessage = `Are you sure you want to delete this ${validType}?`; 
-    if (!window.confirm(confirmMessage)) { // *CHANGE FROM ALERT TO CONFIRM DIALOG
+
+    console.log("Delete button clicked", {
+      type: validType,
+      courseId,
+      examId,
+      sessionId,
+    });
+
+    const confirmMessage = `Are you sure you want to delete this ${validType}?`;
+    if (!window.confirm(confirmMessage)) {
       return;
     }
-    
-    if (!courseId) {
-      console.error("Missing courseId - cannot delete");
-      alert(`Cannot delete ${validType}: Missing course ID`);
+
+    if (validType === "course" && !courseId) {
+      console.error("Missing courseId - cannot delete course");
+      alert("Cannot delete course: Missing course ID");
       return;
     }
-    
-    if (!examId) {
-      console.error("Missing examId - cannot delete");
-      alert(`Cannot delete ${validType}: Missing exam ID`);
+
+    if (validType === "exam" && (!courseId || !examId)) {
+      console.error("Missing courseId or examId - cannot delete exam");
+      alert(`Cannot delete ${validType}: Missing required IDs`);
       return;
     }
-    
-    if (validType === 'session' && !sessionId) {
-      console.error("Missing sessionId - cannot delete session");
-      alert("Cannot delete session: Missing session ID");
+
+    if (validType === "session" && (!courseId || !examId || !sessionId)) {
+      console.error(
+        "Missing courseId, examId or sessionId - cannot delete session"
+      );
+      alert("Cannot delete session: Missing required IDs");
       return;
     }
-    
+
     setIsDeleting(true);
-    
+
     try {
-      if (validType === 'exam') {
-        console.log(`Attempting to delete ${validType} with courseId: ${courseId}, examId: ${examId}`);
+      if (validType === "course") {
+        await courseService.deleteCourse(courseId);
+      } else if (validType === "exam") {
         await examService.deleteExam(courseId, examId);
       } else {
         await sessionService.deleteSession(courseId, examId, sessionId);
       }
-      
-      console.log(`${validType} deleted successfully`);// *ADD TOAST HERE
-      
+
+      console.log(`${validType} deleted successfully`);
+
       if (onDeleteSuccess) {
         onDeleteSuccess();
       }
       router.refresh();
     } catch (error) {
       console.error(`Error deleting ${validType}:`, error);
-      alert(`Failed to delete ${validType}. Please try again. (${error.message})`);
+      alert(
+        `Failed to delete ${validType}. Please try again. (${error.message})`
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -93,7 +105,7 @@ export default function TestCard({
       </Link>
 
       {/* Edit Button */}
-      <Link href={edit_link} >
+      <Link href={edit_link}>
         <Button
           variant="ghost"
           size="icon"
@@ -109,7 +121,8 @@ export default function TestCard({
         size="icon"
         onClick={handleDelete}
         disabled={isDeleting}
-        className="absolute top-4 right-4 text-white opacity-60 hover:opacity-100">    
+        className="absolute top-4 right-4 text-white opacity-60 hover:opacity-100"
+      >
         <Trash2 className="h-4 w-4" />
         {isDeleting && <span className="sr-only">Deleting...</span>}
       </Button>

@@ -122,7 +122,9 @@ export default function EditSessionForm() {
   };
 
   const handleRemoveWhitelistLink = (indexToRemove) => {
-    setWhitelistLinks(whitelistLinks.filter((_, index) => index !== indexToRemove));
+    setWhitelistLinks(
+      whitelistLinks.filter((_, index) => index !== indexToRemove)
+    );
   };
 
   const handleWhitelistUpload = (e) => {
@@ -173,16 +175,16 @@ export default function EditSessionForm() {
 
         if (duplicates.length > 0) {
           toast.success(
-            t("WhitelistUpdatedWithDuplicates", { 
-              count: students.length, 
-              duplicates: duplicates.length 
-            }) || 
-            `Whitelist updated with ${students.length} student emails. ${duplicates.length} duplicate(s) were removed.`
+            t("WhitelistUpdatedWithDuplicates", {
+              count: students.length,
+              duplicates: duplicates.length,
+            }) ||
+              `Whitelist updated with ${students.length} student emails. ${duplicates.length} duplicate(s) were removed.`
           );
         } else {
           toast.success(
             t("WhitelistUpdated", { count: students.length }) ||
-            `Whitelist updated with ${students.length} student emails`
+              `Whitelist updated with ${students.length} student emails`
           );
         }
 
@@ -199,21 +201,26 @@ export default function EditSessionForm() {
 
   const handleAddStudent = () => {
     const studentEmail = document.getElementById("student-email").value.trim();
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(studentEmail)) {
       toast.error(t("InvalidEmailFormat") || "Invalid email format");
       return;
     }
-    
-    if (whitelistedStudents.some(student => 
-      student.email.toLowerCase() === studentEmail.toLowerCase())) {
-      toast.error(t("EmailAlreadyInList") || "This email is already in the list");
+
+    if (
+      whitelistedStudents.some(
+        (student) => student.email.toLowerCase() === studentEmail.toLowerCase()
+      )
+    ) {
+      toast.error(
+        t("EmailAlreadyInList") || "This email is already in the list"
+      );
       return;
     }
-    
+
     setWhitelistedStudents([...whitelistedStudents, { email: studentEmail }]);
-    
+
     document.getElementById("student-email").value = "";
   };
 
@@ -246,13 +253,23 @@ export default function EditSessionForm() {
           session_id
         );
         setSessionData(data);
+        console.log("Fetched session data:", data);
 
         if (data.allowed_links && Array.isArray(data.allowed_links)) {
           setWhitelistLinks(data.allowed_links);
+          console.log("Setting whitelist links:", data.allowed_links);
         }
-        
+
         if (data.allowed_students && Array.isArray(data.allowed_students)) {
-          setWhitelistedStudents(data.allowed_students.map(email => ({ email })));
+          const students = data.allowed_students.map((email) => ({ email }));
+          console.log("Setting whitelisted students:", students);
+          setWhitelistedStudents(students);
+        } else {
+          console.log(
+            "No allowed_students in data or not an array:",
+            data.allowed_students
+          );
+          setWhitelistedStudents([]); // Ensure it's initialized as empty array
         }
 
         if (data.exam_link && data.exam_link.trim() !== "") {
@@ -358,6 +375,7 @@ export default function EditSessionForm() {
 
       const hasNewFiles = files.length > 0;
       const hasNewLink = values.examLink && values.examLink.trim() !== "";
+      const keepExistingMaterials = !hasNewFiles && !hasNewLink;
 
       const formData = new FormData();
 
@@ -367,21 +385,18 @@ export default function EditSessionForm() {
       formData.append("room", values.room);
       formData.append("exam_id", Number(exam_id));
       formData.append("course_id", course_id);
-      
+
       if (whitelistLinks.length > 0) {
         formData.append("allowed_links", JSON.stringify(whitelistLinks));
       }
-      
-      if (whitelistedStudents.length > 0) {
-        const studentEmails = whitelistedStudents.map(student => student.email);
-        formData.append("allowed_students", JSON.stringify(studentEmails));
-      }
 
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
-      }
+      const studentEmails = whitelistedStudents.map((student) => student.email);
+      formData.append("allowed_students", JSON.stringify(studentEmails));
 
-      if (hasNewFiles) {
+      // Add a flag to indicate we're keeping existing materials
+      if (keepExistingMaterials) {
+        formData.append("keep_existing_materials", "true");
+      } else if (hasNewFiles) {
         for (const file of files) {
           formData.append("files", file);
         }
@@ -389,12 +404,14 @@ export default function EditSessionForm() {
         formData.append("exam_link", values.examLink);
       }
 
-      await sessionService.updateSessionWithFiles(
+      const response = await sessionService.updateSessionWithFiles(
         course_id,
         exam_id,
         session_id,
         formData
       );
+
+      console.log("Update session response:", response);
 
       toast.success("Session updated successfully!");
       router.push(`/course/${course_id}/${exam_id}`);
@@ -715,12 +732,15 @@ export default function EditSessionForm() {
           </div>
 
           <div className="border rounded-md p-4">
-            <h3 className="font-medium mb-4">{t("Allowed Links") || "Allowed Links"}</h3>
+            <h3 className="font-medium mb-4">
+              {t("Allowed Links") || "Allowed Links"}
+            </h3>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {t("The Links should start by https:// or http://") || "Add links that students are allowed to access during the exam."}
+                {t("The Links should start by https:// or http://") ||
+                  "Add links that students are allowed to access during the exam."}
               </p>
-              
+
               <div className="flex gap-2">
                 <div className="flex items-center flex-1">
                   <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -731,46 +751,62 @@ export default function EditSessionForm() {
                     className="flex-1"
                   />
                 </div>
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   onClick={handleAddWhitelistLink}
                   disabled={!isValidUrl(whitelistLink)}
                 >
-                  {t("AddLink") || "Add Link"}
+                  {t("Add Link") || "Add Link"}
                 </Button>
               </div>
-              
+
               {whitelistLinks.length > 0 && (
                 <div className="mt-4">
-                  <p className="text-sm font-medium">{t("Whitelisted Links") || "Whitelisted Links"}:</p>
-                  <ul className="mt-2 space-y-2">
-                    {whitelistLinks.map((link, index) => (
-                      <li key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
-                        <span className="text-sm truncate max-w-[80%]">{link}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveWhitelistLink(index)}
-                          className="h-8 w-8 p-0"
+                  <div className="flex justify-between items-center bg-blue-50 p-2 rounded-t-md border-b">
+                    <p className="text-sm font-medium text-blue-700">
+                      {t("Whitelisted Links", {
+                        count: whitelistLinks.length,
+                      }) || `Whitelisted Links (${whitelistLinks.length})`}
+                    </p>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto border border-t-0 rounded-b-md">
+                    <ul className="divide-y">
+                      {whitelistLinks.map((link, index) => (
+                        <li
+                          key={index}
+                          className="flex items-center justify-between p-2 hover:bg-gray-50"
                         >
-                          ×
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
+                          <span className="text-sm truncate max-w-[80%]">
+                            {link}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveWhitelistLink(index)}
+                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-100"
+                          >
+                            ×
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           <div className="border rounded-md p-4">
-            <h3 className="font-medium mb-4">{t("Student Whitelist") || "Student Whitelist"}</h3>
+            <h3 className="font-medium mb-4">
+              {t("Student Whitelist") || "Student Whitelist"}
+            </h3>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {t("StudentWhitelistDescription") || "Add students who are allowed to join this session. Leave empty to allow all students."}
+                {t("Add the students that are allowed do join this session.") ||
+                  "Add students who are allowed to join this session. Leave empty to allow all students."}
               </p>
-              
+
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
                   <input
@@ -783,10 +819,12 @@ export default function EditSessionForm() {
                   />
                   <Button
                     type="button"
-                    onClick={() => document.getElementById("whitelist-csv-upload").click()}
+                    onClick={() =>
+                      document.getElementById("whitelist-csv-upload").click()
+                    }
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {t("UploadCSV") || "Upload CSV File"}
+                    {t("Upload CSV") || "Upload CSV File"}
                   </Button>
                   
                   {whitelistedStudents.length > 0 && (
@@ -801,10 +839,11 @@ export default function EditSessionForm() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {t("CSVUploadHelp") || "Upload a CSV file containing student emails (column 6)"}
+                  {t("CSVU pload Help") ||
+                    "Upload a CSV file containing student emails (column 6)"}
                 </p>
               </div>
-              
+
               <div className="mt-6">
                 <div className="flex gap-2">
                   <Input
@@ -812,45 +851,52 @@ export default function EditSessionForm() {
                     placeholder="student@example.com"
                     className="flex-1"
                   />
-                  <Button 
-                    type="button" 
-                    onClick={handleAddStudent}
-                  >
-                    {t("AddStudent") || "Add Student"}
+                  <Button type="button" onClick={handleAddStudent}>
+                    {t("Add Student") || "Add Student"}
                   </Button>
                 </div>
               </div>
-              
-              {whitelistedStudents.length > 0 && (
-                <div className="mt-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm font-medium">
-                      {t("WhitelistedStudents", { count: whitelistedStudents.length }) || 
-                       `Whitelisted Students (${whitelistedStudents.length})`}:
-                    </p>
-                  </div>
-                  <div className="mt-2 max-h-40 overflow-y-auto border rounded-md">
-                    <ul className="divide-y">
-                      {whitelistedStudents.map((student, index) => (
-                        <li key={index} className="flex items-center justify-between p-2">
-                          <span className="text-sm truncate max-w-[80%]">{student.email}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveStudent(index)}
-                            className="h-8 w-8 p-0 text-red-500"
-                          >
-                            ×
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+
+              <div className="mt-4">
+                <div className="flex justify-between items-center bg-blue-50 p-2 rounded-t-md border-b">
+                  <p className="text-sm font-medium text-blue-700">
+                    {t("WhitelistedStudents", {
+                      count: whitelistedStudents.length,
+                    }) || `Whitelisted Students (${whitelistedStudents.length})`}
+                  </p>
                 </div>
-              )}
+                <div className="max-h-60 overflow-y-auto border border-t-0 rounded-b-md">
+                  <ul className="divide-y">
+                    {whitelistedStudents.map((student, index) => (
+                      <li
+                        key={index}
+                        className="flex items-center justify-between p-2 hover:bg-gray-50"
+                      >
+                        <span className="text-sm truncate max-w-[80%]">
+                          {student.email}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveStudent(index)}
+                          className="h-8 w-8 p-0 text-red-500 hover:bg-red-100"
+                        >
+                          ×
+                        </Button>
+                      </li>
+                    ))}
+                   {whitelistedStudents.length === 0 && (
+                      <li className="p-3 text-center text-sm text-muted-foreground">
+                        {t("No Students Whitelisted") || "No students whitelisted - all students will be allowed"}
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
+
 
           <div className="flex justify-between">
             <BackButton />
