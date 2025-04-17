@@ -36,6 +36,7 @@ export default function SessionClientPage() {
   const [showJoinCode, setShowJoinCode] = useState(false);
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [showEndDialog, setShowEndDialog] = useState(false);
+  const [whitelistedStudents, setWhitelistedStudents] = useState([]);
 
   const pollingInterval = 5000; // 5 seconds
 
@@ -105,6 +106,18 @@ export default function SessionClientPage() {
   const fetchSessionUsers = useCallback(async () => {
     try {
       const sessionUsersData = await sessionService.getSessionUsers(session_id);
+      const sessionData = await sessionService.getSession(
+        course_id,
+        exam_id,
+        session_id
+      );
+
+      if (
+        sessionData.allowed_students &&
+        Array.isArray(sessionData.allowed_students)
+      ) {
+        setWhitelistedStudents(sessionData.allowed_students);
+      }
 
       const enhancedSessionUsers = await Promise.all(
         sessionUsersData.map(async (sessionUser) => {
@@ -131,7 +144,7 @@ export default function SessionClientPage() {
     } catch (error) {
       console.error("Error fetching session users:", error);
     }
-  }, [session_id]);
+  }, [session_id, course_id, exam_id]);
 
   // Initial data loading
   useEffect(() => {
@@ -438,6 +451,13 @@ export default function SessionClientPage() {
     }
   };
 
+  const getStatusColor = (sessionUser) => {
+    if (!sessionUser) return "bg-red-100"; // Not Joined - Red
+    if (!sessionUser.start_time) return "bg-yellow-100"; // Not Started - Yellow
+    if (sessionUser.end_time) return "bg-blue-100"; // Completed - Blue
+    return "bg-green-100"; // In Progress - Green
+  };
+
   return (
     <div className="min-h-screen bg-light-gray">
       <main className="container mx-auto px-4 py-8">
@@ -589,7 +609,7 @@ export default function SessionClientPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">{t("StudentNMEC")}</TableHead>
-              <TableHead>{t("StudentName")}</TableHead>
+              <TableHead>{t("StudentEmail")}</TableHead>
               <TableHead>{t("DeviceID")}</TableHead>
               <TableHead>{t("StartTime")}</TableHead>
               <TableHead>{t("RemainingTime")}</TableHead>
@@ -597,32 +617,104 @@ export default function SessionClientPage() {
               <TableHead>{t("Status")}</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
-            {sessionUsers.length > 0 ? (
+            {whitelistedStudents.length > 0 ? (
+              whitelistedStudents.map((studentEmail, index) => {
+                // Find if this student has joined the session
+                const sessionUser = sessionUsers.find(
+                  (user) =>
+                    user.user &&
+                    user.user.email &&
+                    user.user.email.toLowerCase() === studentEmail.toLowerCase()
+                );
+
+                return (
+                  <TableRow
+                    key={sessionUser ? sessionUser.id : `whitelist-${index}`}
+                    className={getStatusColor(sessionUser)}
+                  >
+                    <TableCell>
+                      {sessionUser ? sessionUser.user_nmec : "--"}
+                    </TableCell>
+                    <TableCell>
+                      {studentEmail}
+                    </TableCell>
+                    <TableCell>
+                      {sessionUser ? sessionUser.device_id : "--"}
+                    </TableCell>
+                    <TableCell>
+                      {sessionUser
+                        ? formatDateTime(sessionUser.start_time)
+                        : "--"}
+                    </TableCell>
+                    <TableCell>
+                      {sessionUser &&
+                      sessionUser.start_time &&
+                      !sessionUser.end_time ? (
+                        <span className="font-mono bg-green-100 px-2 py-1 rounded text-green-800 font-medium">
+                          {elapsedTimes[sessionUser.id] ||
+                            formatRemainingTime(
+                              sessionUser.start_time,
+                              sessionUser
+                            )}
+                        </span>
+                      ) : sessionUser && sessionUser.end_time ? (
+                        t("Completed")
+                      ) : (
+                        "--"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {sessionUser
+                        ? formatDateTime(sessionUser.end_time)
+                        : "--"}
+                    </TableCell>
+                    <TableCell>
+                      {!sessionUser
+                        ? t("Not Joined")
+                        : !sessionUser.start_time
+                        ? t("Not Started")
+                        : sessionUser.end_time
+                        ? t("Completed")
+                        : t("In Progress")}
+                    </TableCell>
+                    <TableCell>
+                      {sessionUser && (
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewUserDetails(sessionUser)}
+                            title={t("View User Details")}
+                            className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                          >
+                            {t("ViewUser")}
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            ) : sessionUsers.length > 0 ? (
+              // Fallback to just showing session users if no whitelist is available
               sessionUsers.map((sessionUser) => (
-                <TableRow key={sessionUser.id}>
+                <TableRow key={sessionUser.id}
+                  className={getStatusColor(sessionUser)}
+                >
+                  {/* Original session user row rendering */}
                   <TableCell>{sessionUser.user_nmec}</TableCell>
                   <TableCell>
-                    {sessionUser.user?.name || t("UnknownUser")}
+                    {sessionUser.user?.name || t("Unknown User")}
                   </TableCell>
                   <TableCell>{sessionUser.device_id}</TableCell>
                   <TableCell>
                     {formatDateTime(sessionUser.start_time)}
                   </TableCell>
                   <TableCell>
-                    {sessionUser.start_time && !sessionUser.end_time ? (
-                      <span className="font-mono bg-green-100 px-2 py-1 rounded text-green-800 font-medium">
-                        {elapsedTimes[sessionUser.id] ||
-                          formatRemainingTime(
-                            sessionUser.start_time,
-                            sessionUser
-                          )}
-                      </span>
-                    ) : sessionUser.end_time ? (
-                      t("Completed")
-                    ) : (
-                      t("NotStarted")
-                    )}
+                    {/* Remaining time cell */}
+                    {/* Keep the original implementation here */}
                   </TableCell>
                   <TableCell>{formatDateTime(sessionUser.end_time)}</TableCell>
                   <TableCell>
@@ -650,7 +742,7 @@ export default function SessionClientPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-4">
-                  {t("NoUsersInSession")}
+                  {t("No Users In Session")}
                 </TableCell>
               </TableRow>
             )}
@@ -665,14 +757,14 @@ export default function SessionClientPage() {
             id="fetch-button"
             onClick={handleFetchSubmissions}
           >
-            {t("FetchSubmissions")}
+            {t("Fetch Submissions")}
           </Button>
           <Button
             type="button"
             id="download-button"
             onClick={handleDownloadSubmissions}
           >
-            {t("DownloadSubmissions")}
+            {t("Download Submissions")}
           </Button>
         </div>
         <StartSessionDialog

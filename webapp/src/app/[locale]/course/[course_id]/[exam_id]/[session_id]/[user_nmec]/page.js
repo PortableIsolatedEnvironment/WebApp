@@ -190,7 +190,7 @@ export default function MonitoringPage() {
 
       // Call an API to end the exam for this specific user with a message
       const message = "";
-      await sessionService.endUserSession(
+      await sessionService.endSession(
         user_nmec,
         course_id,
         exam_id,
