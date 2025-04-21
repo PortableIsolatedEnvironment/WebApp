@@ -31,28 +31,30 @@ import { Alert } from "@/components/ui/alert";
 import { toast, Toaster } from "sonner";
 import { useTranslations } from "next-intl";
 
-const formSchema = z.object({
-  title: z.string().min(2, {
-    message: "Title must be at least 2 characters.",
-  }),
-  date: z.date({
-    required_error: "A date is required.",
-  }),
-  room: z.string().min(1, {
-    message: "Room is required.",
-  }),
-  duration: z.string().min(1, {
-    message: "Duration is required.",
-  }),
-  examLink: z
-    .string()
-    .url("Please enter a valid URL starting with http:// or https://")
-    .optional()
-    .or(z.literal("")),
-});
+const createFormSchema = (t) =>
+  z.object({
+    title: z.string().min(2, {
+      message: t("Title_Warning"),
+    }),
+    date: z.date({
+      required_error: t("Date_Warning"),
+    }),
+    room: z.string().min(1, {
+      message: t("Room_Warning"),
+    }),
+    duration: z.string().min(1, {
+      message: t("Duration_Warning"),
+    }),
+    examLink: z
+      .string()
+      .url(t("URL_Validation"))
+      .optional()
+      .or(z.literal("")),
+  });
 
 export default function CreateSessionForm() {
   const t = useTranslations();
+  const formSchema = createFormSchema(t);
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -240,7 +242,7 @@ export default function CreateSessionForm() {
 
       if (hasFiles && hasLink) {
         setFormError(
-          "You cannot provide both files and an exam link. Please choose one option."
+          t("Link_File_Error")
         );
         return;
       }
@@ -555,10 +557,10 @@ export default function CreateSessionForm() {
           </div>
 
           <div className="border rounded-md p-4">
-            <h3 className="font-medium mb-4">{t("Allowed Links") || "Allowed Links"}</h3>
+            <h3 className="font-medium mb-4">{t("Allowed_Links") || "Allowed Links"}</h3>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {t("The Links should start by https:// or http://") || "Add links that students are allowed to access during the exam."}
+                {t("LinksPopUp") || "Add links that students are allowed to access during the exam."}
               </p>
               
               <div className="flex gap-2">
@@ -576,13 +578,13 @@ export default function CreateSessionForm() {
                   onClick={handleAddWhitelistLink}
                   disabled={!isValidUrl(whitelistLink)}
                 >
-                  {t("AddLink") || "Add Link"}
+                  {t("Add_Link") || "Add Link"}
                 </Button>
               </div>
               
               {whitelistLinks.length > 0 && (
                 <div className="mt-4">
-                  <p className="text-sm font-medium">{t("Whitelisted Links") || "Whitelisted Links"}:</p>
+                  <p className="text-sm font-medium">{t("Whitelisted_Links") || "Whitelisted Links"}:</p>
                   <ul className="mt-2 space-y-2">
                     {whitelistLinks.map((link, index) => (
                       <li key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">

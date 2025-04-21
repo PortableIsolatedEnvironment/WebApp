@@ -44,7 +44,7 @@ export default function LoginForm() {
       console.log(data);
 
       if (!response.ok) {
-        setError("Invalid Credentials");
+        setError(t("Invalid_Credentials"));
       }
 
       // if role is admin or teacher redirect to /
@@ -82,7 +82,7 @@ export default function LoginForm() {
 
       <div>
         <label htmlFor="email" className="block text-gray-700 mb-2">
-          {t("email")}
+          {t("Email")}
         </label>
         <input
           type="text"
@@ -111,11 +111,11 @@ export default function LoginForm() {
       </div>
 
       <button
-        type="submit"
+        type="Submit"
         disabled={isLoading}
         className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:bg-blue-400"
       >
-        {isLoading ? t("Logging In...") : t("Login")}
+        {isLoading ? t("LoadLogin") : t("Login")}
       </button>
     </form>
   );

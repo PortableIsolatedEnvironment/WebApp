@@ -90,7 +90,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
       "currentUser=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
     setCurrentUser(null);
-    toast.success(t("Logout successful"));
+    toast.success(t("LogoutSucess"));
     const locale = window.location.pathname.split("/")[1] || "en";
     router.push(`/${locale}`);
   };
@@ -171,9 +171,9 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
       <Dialog open={isUserDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("User Profile")}</DialogTitle>
+            <DialogTitle>{t("User_Profile")}</DialogTitle>
             <DialogDescription>
-              {t("Your account information")}
+              {t("Account_info")}
             </DialogDescription>
           </DialogHeader>
 
@@ -194,7 +194,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
               </div>
               <div>
                 <h3 className="font-medium text-lg">
-                  {currentUser?.name || currentUser?.email || t("Unknown User")}
+                  {currentUser?.name || currentUser?.email || t("Unknown_User")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {currentUser?.email || ""}
@@ -216,7 +216,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
               {currentUser?.nmec && (
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">
-                    {t("NMEC")}:
+                    {t("Student_ID")}:
                   </span>
                   <span className="text-sm font-mono bg-slate-100 px-2 py-0.5 rounded">
                     {currentUser.nmec}
