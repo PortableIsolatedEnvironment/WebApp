@@ -1,38 +1,38 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { NextResponse } from "next/server";
-import { getLocale } from "next-intl/server";
 
 // Create the internationalization middleware
 const intlMiddleware = createIntlMiddleware(routing);
 
-// Middleware function that handles both i18n and authentication
-export default async function middleware(request) {
-  // Check if the URL is for the login page (considering all locales)
-  const isLoginPage = /\/[^/]+\/login(\/)?$/.test(request.nextUrl.pathname);
-
-  // Get the user from cookies if available
-  const currentUser = request.cookies.get("currentUser")?.value;
-
-  // If user is not authenticated and not on login page, redirect to login
-  if (!currentUser && !isLoginPage) {
-    let locale;
-
-    try {
-      locale = await getLocale(request);
-    } catch {
-      locale = routing.defaultLocale;
-    }
-
-    const url = new URL(`/${locale}/login`, request.nextUrl.origin);
-    return NextResponse.redirect(url);
+// Function to add security headers to response
+function addSecurityHeaders(response) {
+  // Add security headers
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  
+  // Only add HSTS in production
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   }
-
-  // Process i18n middleware
-  return intlMiddleware(request);
+  
+  return response;
 }
 
-// Use a simple matcher pattern
+// Middleware function that handles i18n and security headers
+// Middleware function that handles i18n and security headers
+export default async function middleware(request) {
+  // First handle internationalization
+  const response = await intlMiddleware(request);
+  
+  // Then add security headers
+  return addSecurityHeaders(response);
+}
+
+// Match most paths except static assets
 export const config = {
-  matcher: ["/((?!api|_next|_vercel|.*\\.(?:jpg|png|gif|ico|svg)$).*)"],
+  matcher: ['/((?!api|_next|_vercel|.*\\.(?:jpg|png|gif|ico|svg|js|css)$).*)'],
 };

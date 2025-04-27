@@ -1,18 +1,15 @@
-
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Plus} from "lucide-react"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BackButton from "@/components/back-button";
 import TestCard from "@/components/editable-card";
-import { courseService } from "@/api/services/courseService";
-import { examService } from "@/api/services/examService";
-
+import { serverCourseService, serverExamService } from "@/api/services/serverService";
 
 export default async function CoursePage({ params }) {
   const { course_id } = await params;
-  const course = await courseService.getCoursebyID(course_id);
-  const exams = await examService.getExams(course_id);
+  const course = await serverCourseService.getCoursebyID(course_id);
+  const exams = await serverExamService.getExams(course_id);
 
   if (!course) {
     return notFound(); // Show 404 if course doesn't exist
@@ -29,8 +26,8 @@ export default async function CoursePage({ params }) {
                 name={exam.name}
                 link={`/course/${course.id}/${exam.id}`}
                 edit_link={`/course/${course.id}/${exam.id}/edit_exam`}
-                type = "exam"
-                courseId={course_id} // Make sure this is defined and not null/undefined
+                type="exam"
+                courseId={course_id}
                 examId={exam.id}
               />
             ))}
@@ -42,7 +39,7 @@ export default async function CoursePage({ params }) {
         </div>
 
         {/* Floating Action Button - Bottom Left */}
-        <Link href={`/course/${course.id}/create_exam`}>
+        <Link href={`/course/${course_id}/create_exam`}>
           <Button 
             size="icon" 
             className="fixed bottom-40 right-40 h-24 w-24 rounded-full bg-[#008F4C] hover:bg-[#006B3F] shadow-lg border-4 border-white flex items-center justify-center"
@@ -52,5 +49,5 @@ export default async function CoursePage({ params }) {
         </Link>
       </main>
     </div>
-    );
-  }
+  );
+}

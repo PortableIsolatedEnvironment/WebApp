@@ -1,11 +1,9 @@
 import TestCard from "@/components/editable-card";
-import { courseService } from "@/api/services/courseService";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { fetchApi } from "@/api/client";
-import { ENDPOINTS } from "@/api/endpoints";
+import { serverCourseService } from "@/api/services/serverService";
 
 export default async function CoursesPage() {
   const t = await getTranslations();
@@ -13,11 +11,7 @@ export default async function CoursesPage() {
   let courses = [];
 
   try {
-    courses = await courseService.getAllCourses();
-    if (!courses || courses.length === 0) {
-      console.log("No courses found using service, trying direct fetch...");
-      courses = await fetchApi(ENDPOINTS.COURSES);
-    }
+    courses = await serverCourseService.getAllCourses();
     console.log("Fetched courses:", courses);
   } catch (error) {
     console.error("Error fetching courses:", error);

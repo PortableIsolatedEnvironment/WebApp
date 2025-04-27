@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { fetchApi } from "@/api/client";
 
 const LogViewer = ({ sessionId, user_nmec }) => {
   const [logs, setLogs] = useState([]);
@@ -23,19 +24,10 @@ const LogViewer = ({ sessionId, user_nmec }) => {
 
   const fetchLogs = async () => {
     if (!sessionId || !user_nmec) return;
-
     try {
       setLoading(true);
-      const response = await fetch(
-        `http://localhost:8000/logs/session/${sessionId}/user/${user_nmec}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch logs: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setLogs(data);
+      const data = await fetchApi(`/logs/session/${sessionId}/user/${user_nmec}`);
+      setLogs(data || []);
       setError(null);
     } catch (err) {
       console.error("Error fetching logs:", err);
@@ -55,7 +47,19 @@ const LogViewer = ({ sessionId, user_nmec }) => {
     }
 
     try {
-      const url = `http://localhost:8000/logs/session/${sessionId}/user/${user_nmec}/stream`;
+      // Get token from cookie
+      let token = '';
+      const currentUserCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('currentUser='));
+        
+      if (currentUserCookie) {
+        const userData = JSON.parse(decodeURIComponent(currentUserCookie.split('=')[1]));
+        token = userData.access_token;
+      }
+      
+      // Include token as query parameter for SSE
+      const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/logs/session/${sessionId}/user/${user_nmec}/stream?token=${token}`;
       eventSourceRef.current = new EventSource(url);
 
       eventSourceRef.current.onmessage = (event) => {

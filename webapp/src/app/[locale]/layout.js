@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { hasLocale } from "next-intl";
 import { routing } from "@/i18n/routing";
 import { Toaster } from "@/components/ui/sonner";
+import AuthProvider from "@/components/auth-provider";
 
 const geistSans = Roboto({
   variable: "--font-roboto",
@@ -18,9 +19,7 @@ const geistMono = Roboto_Mono({
   weight: ["400", "700"],
 });
 
-export async function generateMetadata({ params }) {
-  const { locale } = await params;
-
+export async function generateMetadata() {
   return {
     title: "Portable Isolated Environment",
     icons: {
@@ -54,8 +53,10 @@ export default async function RootLayout({ children, params }) {
     <html lang={locale} suppressHydrationWarning> 
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Navbar />
-          <main className="container mx-auto px-4">{children}</main>
+          <AuthProvider locale={locale}>
+            <Navbar />
+            <main className="container mx-auto px-4">{children}</main>
+          </AuthProvider>
         </NextIntlClientProvider>
         <Toaster />
       </body>

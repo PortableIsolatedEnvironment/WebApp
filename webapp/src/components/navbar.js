@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "next-intl";
+import { userService } from "@/api/services/userService";
+import { getCurrentUser } from "@/lib/auth";
 
 export default function Navbar({ searchQuery, setSearchQuery }) {
   const t = useTranslations();
@@ -27,24 +29,8 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
 
   // Extract cookie parsing logic to component level
   const getUserFromCookie = () => {
-    const cookieValue = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("currentUser="));
-
-    console.log("Cookie Value:", cookieValue);
-
-    if (cookieValue) {
-      try {
-        const userJson = decodeURIComponent(cookieValue.split("=")[1]);
-        const userData = JSON.parse(userJson);
-        setCurrentUser(userData);
-      } catch (error) {
-        console.error("Error parsing user cookie:", error);
-      }
-    } else {
-      // If no cookie found, ensure currentUser is null
-      setCurrentUser(null);
-    }
+    const userData = getCurrentUser();
+    setCurrentUser(userData);
   };
 
   // Handle cookie changes
@@ -85,15 +71,21 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
   }, []);
 
   // Handle logout
-  const handleLogout = () => {
-    document.cookie =
-      "currentUser=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-    setCurrentUser(null);
-    toast.success(t("LogoutSucess"));
-    const locale = window.location.pathname.split("/")[1] || "en";
-    router.push(`/${locale}`);
+  const handleLogout = async () => {
+    try {
+      await userService.logoutUser();
+      
+      // Get the current locale from the URL
+      const locale = window.location.pathname.split('/')[1] || 'en';
+      router.push(`/${locale}/login`);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still redirect even on error
+      const locale = window.location.pathname.split('/')[1] || 'en';
+      router.push(`/${locale}/login`);
+    }
   };
+  
 
   // Get role icon based on user role
   const getRoleIcon = () => {
