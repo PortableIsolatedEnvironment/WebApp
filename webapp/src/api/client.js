@@ -10,48 +10,69 @@ export async function fetchApi(endpoint, options = {}) {
     const isServer = typeof window === 'undefined';
     
     // Set up headers based on content type
-    const headers = options.body instanceof FormData
-      ? { ...options.headers } // Let browser set multipart/form-data boundary
-      : { 'Content-Type': 'application/json', ...options.headers };
+    const headers = options.headers || {};
+    
+    // Set content type if not FormData
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
     
     // Add security headers
     headers['X-Requested-With'] = 'XMLHttpRequest';
     
     // Only handle auth tokens on client-side
     if (!isServer) {
-      // Get auth token from cookie
-      const currentUserCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('currentUser='));
-
-      if (currentUserCookie) {
-        try {
-          // Check if token is expired before making request
-          if (isTokenExpired()) {
-            // Token expired, redirect to login
-            const locale = window.location.pathname.split('/')[1] || 'en';
-            window.location.href = `/${locale}/login?expired=true`;
-            throw new Error('Session expired. Please log in again.');
-          }
-          
-          const userData = JSON.parse(decodeURIComponent(currentUserCookie.split('=')[1]));
-          if (userData.access_token) {
-            headers['Authorization'] = `Bearer ${userData.access_token}`;
-          }
-        } catch (error) {
-          if (error.message !== 'Session expired. Please log in again.') {
-            console.error('Error processing authentication:', error);
+      // DEBUG: Log all cookies to see what we're working with
+      console.log('All cookies:', document.cookie);
+      
+      // Get auth token from cookie - robust parsing
+      const cookies = document.cookie.split(';');
+      let userData = null;
+      
+      for (const cookie of cookies) {
+        const trimmedCookie = cookie.trim();
+        if (trimmedCookie.startsWith('currentUser=')) {
+          try {
+            const cookieValue = trimmedCookie.substring('currentUser='.length);
+            userData = JSON.parse(decodeURIComponent(cookieValue));
+            console.log('Found user data in cookie:', userData ? 'yes' : 'no');
+            break;
+          } catch (e) {
+            console.error('Failed to parse user cookie:', e);
           }
         }
       }
+      
+      if (userData && userData.access_token) {
+        // IMPORTANT: Make sure token is properly formatted without extra spaces
+        const cleanToken = userData.access_token.trim();
+        
+        // Explicitly set the Authorization header
+        headers['Authorization'] = `Bearer ${cleanToken}`;
+        
+        console.log('Adding auth header with token. Role:', userData.role);
+        console.log('Headers after setting auth:', Object.keys(headers));
+      } else {
+        console.warn('No access token found in cookie - auth header not set');
+      }
     }
     
-    // Perform the fetch
-    const response = await fetch(url, {
-      headers,
-      credentials: 'include',
+    // DEBUG: Log the final headers being sent
+    console.log('Request headers for', endpoint, ':', Object.keys(headers));
+    
+    // Create the options object for fetch
+    const fetchOptions = {
       ...options,
-    });
+      headers: headers,
+      credentials: 'include',
+      mode: 'cors'
+    };
+    
+    // Perform the fetch with proper CORS settings
+    const response = await fetch(url, fetchOptions);
+    
+    // DEBUG: Log response status
+    console.log('Response status:', response.status);
 
     // Handle error responses
     if (!response.ok) {
@@ -61,14 +82,6 @@ export async function fetchApi(endpoint, options = {}) {
         errorDetails = errorData.detail || errorData.message || JSON.stringify(errorData);
       } catch (e) {
         errorDetails = response.statusText;
-      }
-
-      // Special client-side handling for authentication errors
-      if (!isServer && response.status === 401) {
-        // Redirect to login on authentication issues
-        const locale = window.location.pathname.split('/')[1] || 'en';
-        window.location.href = `/${locale}/login?expired=true`;
-        throw new Error('Session expired. Please log in again.');
       }
       
       throw new Error(`API error (${response.status}): ${errorDetails}`);

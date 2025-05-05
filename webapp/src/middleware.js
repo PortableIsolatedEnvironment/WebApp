@@ -23,7 +23,6 @@ function addSecurityHeaders(response) {
 }
 
 // Middleware function that handles i18n and security headers
-// Middleware function that handles i18n and security headers
 export default async function middleware(request) {
   // First handle internationalization
   const response = await intlMiddleware(request);
