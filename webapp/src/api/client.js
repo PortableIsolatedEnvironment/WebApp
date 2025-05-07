@@ -1,66 +1,90 @@
-// const REQUEST_TIMEOUT_MS = 30000; // 30 seconds timeout
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL // !DEMO change 
+import { isTokenExpired } from '@/lib/auth';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function fetchApi(endpoint, options = {}) {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    // Check if we're on server or client side
+    const isServer = typeof window === 'undefined';
+    
     // Set up headers based on content type
-    const headers = options.body instanceof FormData
-      ? { ...options.headers } // Let browser set multipart/form-data boundary
-      : { 'Content-Type': 'application/json', ...options.headers };
+    const headers = options.headers || {};
     
-    // * TODO Add CSRF token from cookie if available (if your backend uses CSRF protection)
-    // const csrfToken = getCsrfToken();
-    // if (csrfToken && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method)) {
-    //   headers['X-CSRF-Token'] = csrfToken;
-    // }
-
-    // Create AbortController for timeout handling
-    // const controller = new AbortController();
-    // const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    // Set content type if not FormData
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
     
-    // Perform the fetch with timeout
-    const response = await fetch(url, {
-      headers,
-      mode: 'cors', 
-      // credentials: 'include', // Always include credentials for authenticated requests
-      // signal: controller.signal,
+    // Add security headers
+    headers['X-Requested-With'] = 'XMLHttpRequest';
+    
+    // Only handle auth tokens on client-side
+    if (!isServer) {
+      // DEBUG: Log all cookies to see what we're working with
+      console.log('All cookies:', document.cookie);
+      
+      // Get auth token from cookie - robust parsing
+      const cookies = document.cookie.split(';');
+      let userData = null;
+      
+      for (const cookie of cookies) {
+        const trimmedCookie = cookie.trim();
+        if (trimmedCookie.startsWith('currentUser=')) {
+          try {
+            const cookieValue = trimmedCookie.substring('currentUser='.length);
+            userData = JSON.parse(decodeURIComponent(cookieValue));
+            console.log('Found user data in cookie:', userData ? 'yes' : 'no');
+            break;
+          } catch (e) {
+            console.error('Failed to parse user cookie:', e);
+          }
+        }
+      }
+      
+      if (userData && userData.access_token) {
+        // IMPORTANT: Make sure token is properly formatted without extra spaces
+        const cleanToken = userData.access_token.trim();
+        
+        // Explicitly set the Authorization header
+        headers['Authorization'] = `Bearer ${cleanToken}`;
+        
+        console.log('Adding auth header with token. Role:', userData.role);
+        console.log('Headers after setting auth:', Object.keys(headers));
+      } else {
+        console.warn('No access token found in cookie - auth header not set');
+      }
+    }
+    
+    // DEBUG: Log the final headers being sent
+    console.log('Request headers for', endpoint, ':', Object.keys(headers));
+    
+    // Create the options object for fetch
+    const fetchOptions = {
       ...options,
-    });
+      headers: headers,
+      credentials: 'include',
+      mode: 'cors'
+    };
+    
+    // Perform the fetch with proper CORS settings
+    const response = await fetch(url, fetchOptions);
+    
+    // DEBUG: Log response status
+    console.log('Response status:', response.status);
 
-    // Clear the timeout
-    // clearTimeout(timeoutId);
-
-    // Handle specific error status codes
+    // Handle error responses
     if (!response.ok) {
-      // Get error details from response if possible
       let errorDetails = 'Unknown error';
       try {
         const errorData = await response.json();
         errorDetails = errorData.detail || errorData.message || JSON.stringify(errorData);
       } catch (e) {
-        // If we can't parse JSON, use status text
         errorDetails = response.statusText;
       }
-
-      // Throw specific errors based on status
-      switch (response.status) {
-        case 400:
-          throw new Error(`Bad request: ${errorDetails}`);
-        case 401:
-          // Redirect to login on authentication issues
-          window.location.href = '/login?expired=true';
-          throw new Error('Session expired. Please log in again.');
-        case 403:
-          throw new Error(`Access denied: ${errorDetails}`);
-        case 404:
-          return null; // Special handling for 404 - return null
-        case 500:
-          throw new Error(`Server error: ${errorDetails}`);
-        default:
-          throw new Error(`API error (${response.status}): ${errorDetails}`);
-      }
+      
+      throw new Error(`API error (${response.status}): ${errorDetails}`);
     }
 
     // Handle empty responses or DELETE requests
@@ -82,31 +106,7 @@ export async function fetchApi(endpoint, options = {}) {
     // Return text for non-JSON responses
     return await response.text();
   } catch (error) {
-    // Handle timeout errors
-    if (error.name === 'AbortError') {
-      throw new Error('Request timed out. Please try again later.');
-    }
-    
-    // Don't log 404 errors to reduce console noise
-    if (!error.message?.includes('API error: 404')) {
-      console.error('API request failed:', error);
-    }
+    console.error('API request failed:', error);
     throw error;
   }
 }
-
-// /**
-//  * TODO Get CSRF token from cookies 
-//  */
-// function getCsrfToken() {
-//   // This implementation depends on how your backend sends CSRF tokens
-//   // For example, if it's set in a cookie named 'csrf_token':
-//   const cookies = document.cookie.split(';');
-//   for (const cookie of cookies) {
-//     const [name, value] = cookie.trim().split('=');
-//     if (name === 'csrf_token') {
-//       return decodeURIComponent(value);
-//     }
-//   }
-//   return null;
-// }

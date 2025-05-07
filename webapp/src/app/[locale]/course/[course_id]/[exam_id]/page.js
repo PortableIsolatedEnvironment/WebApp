@@ -4,18 +4,15 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
 import TestCard from "@/components/editable-card"
-import { courseService } from "@/api/services/courseService"
-import { examService } from "@/api/services/examService"
-import { sessionService } from "@/api/services/sessionService"
-
+import { serverCourseService, serverExamService, serverSessionService } from "@/api/services/serverService"
 
 export default async function ExamPage({ params }) {
   const { course_id, exam_id } = await params;
-  const course = await courseService.getCoursebyID(course_id);
-  const exam = await examService.getExam(course_id, exam_id);
-  const sessions = await sessionService.getSessions(course_id, exam_id);
+  const course = await serverCourseService.getCoursebyID(course_id);
+  const exam = await serverExamService.getExam(course_id, exam_id);
+  const sessions = await serverSessionService.getSessions(course_id, exam_id);
 
-if (!exam) {
+  if (!exam) {
     return notFound(); // Show 404 if exam or course doesn't exist
   }
 
@@ -31,8 +28,8 @@ if (!exam) {
                 description={new Date(session.date).toLocaleDateString()}
                 link={`/course/${course_id}/${exam_id}/${session.id}`}
                 edit_link={`/course/${course_id}/${exam_id}/${session.id}/edit_session`}
-                type = "session"
-                courseId={course_id} // Make sure this is defined and not null/undefined
+                type="session"
+                courseId={course_id}
                 examId={exam_id}
                 sessionId={session.id}
               />
@@ -56,6 +53,5 @@ if (!exam) {
 
       </main>
     </div>
-  )
+  );
 }
-
