@@ -23,7 +23,6 @@ export async function fetchApi(endpoint, options = {}) {
     // Only handle auth tokens on client-side
     if (!isServer) {
       // DEBUG: Log all cookies to see what we're working with
-      console.log('All cookies:', document.cookie);
       
       // Get auth token from cookie - robust parsing
       const cookies = document.cookie.split(';');
@@ -35,7 +34,6 @@ export async function fetchApi(endpoint, options = {}) {
           try {
             const cookieValue = trimmedCookie.substring('currentUser='.length);
             userData = JSON.parse(decodeURIComponent(cookieValue));
-            console.log('Found user data in cookie:', userData ? 'yes' : 'no');
             break;
           } catch (e) {
             console.error('Failed to parse user cookie:', e);
@@ -50,15 +48,12 @@ export async function fetchApi(endpoint, options = {}) {
         // Explicitly set the Authorization header
         headers['Authorization'] = `Bearer ${cleanToken}`;
         
-        console.log('Adding auth header with token. Role:', userData.role);
-        console.log('Headers after setting auth:', Object.keys(headers));
       } else {
         console.warn('No access token found in cookie - auth header not set');
       }
     }
     
     // DEBUG: Log the final headers being sent
-    console.log('Request headers for', endpoint, ':', Object.keys(headers));
     
     // Create the options object for fetch
     const fetchOptions = {
@@ -72,7 +67,6 @@ export async function fetchApi(endpoint, options = {}) {
     const response = await fetch(url, fetchOptions);
     
     // DEBUG: Log response status
-    console.log('Response status:', response.status);
 
     // Handle error responses
     if (!response.ok) {

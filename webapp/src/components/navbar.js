@@ -35,7 +35,6 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
 
   // Handle cookie changes
   const handleCookieChange = () => {
-    console.log("Cookie change detected");
     getUserFromCookie();
   };
 

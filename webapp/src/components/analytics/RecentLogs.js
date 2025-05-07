@@ -3,6 +3,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { fetchApi } from '@/api/client';
 
 export function RecentLogs({ 
   courseId = null, 
@@ -45,14 +46,8 @@ export function RecentLogs({
       if (sessionId) params.append('session_id', sessionId);
       if (userNmec) params.append('user_nmec', userNmec);
       
-      const response = await fetch(`http://localhost:8000/logs/search?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching logs: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
+      const data = await fetchApi(`/logs/search?${params.toString()}`);
+       
       // Format logs for display
       const formattedLogs = data.logs.map(log => {
         const source = log._source || log;

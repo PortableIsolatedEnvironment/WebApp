@@ -12,7 +12,6 @@ export default async function CoursesPage() {
 
   try {
     courses = await serverCourseService.getAllCourses();
-    console.log("Fetched courses:", courses);
   } catch (error) {
     console.error("Error fetching courses:", error);
   }

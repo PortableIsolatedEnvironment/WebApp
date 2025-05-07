@@ -269,7 +269,6 @@ export default function CreateExamForm() {
             try {
               const [hours, minutes] = values.duration.split(":")
               durationInSeconds = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60)
-              console.log("Duration calculated:", values.duration, "->", durationInSeconds, "seconds")
             } catch (err) {
               console.error("Failed to parse duration:", err)
             }

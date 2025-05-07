@@ -19,7 +19,6 @@ export default function ScreenViewer({ user_nmec, sessionId, courseId, examId })
   // Console logger with timestamp for debugging
   const logWithTime = (message, data) => {
     const time = new Date().toLocaleTimeString();
-    console.log(`[${time}] ${message}`, data || '');
   };
 
   // Request screen sharing from student

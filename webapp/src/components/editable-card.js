@@ -39,13 +39,6 @@ export default function TestCard({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log("Delete button clicked", {
-      type: validType,
-      courseId,
-      examId,
-      sessionId,
-    });
-
     const confirmMessage = t(`Are you sure you want to delete this ${validType}?`);
     if (!window.confirm(confirmMessage)) {
       return;
@@ -81,8 +74,6 @@ export default function TestCard({
       } else {
         await sessionService.deleteSession(courseId, examId, sessionId);
       }
-
-      console.log(`${validType} deleted successfully`);
 
       if (onDeleteSuccess) {
         onDeleteSuccess();

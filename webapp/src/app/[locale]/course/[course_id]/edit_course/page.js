@@ -74,8 +74,6 @@ export default function EditCourseForm({ params }) {
         setIsLoading(true);
         const course = await courseService.getCoursebyID(course_id);
 
-        console.log("API Response:", course); // Debug the entire response
-
         if (course) {
           // Check if course.name exists and is a string
           const name =
@@ -88,7 +86,6 @@ export default function EditCourseForm({ params }) {
             name: name,
             id: course.id || "", // Provide fallback for id as well
           });
-          console.log("Course name set to:", name); // Debug log
         } else {
           setError("Course not found");
         }

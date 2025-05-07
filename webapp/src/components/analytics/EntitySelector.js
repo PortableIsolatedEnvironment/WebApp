@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
+import { fetchApi } from "@/api/client";
 
 export function EntitySelector({ entityType, entityField, timeRange, onSelectEntity }) {
   const [entities, setEntities] = useState([]);
@@ -30,13 +31,7 @@ export function EntitySelector({ entityType, entityField, timeRange, onSelectEnt
       try {
         setLoading(true);
         
-        const response = await fetch(`http://localhost:8000/analytics/logs/summary${getTimeParam()}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch entities: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
+        const data = await fetchApi(`/analytics/logs/summary${getTimeParam()}`);
         
         // Select the right data field based on entity type
         let entityData;

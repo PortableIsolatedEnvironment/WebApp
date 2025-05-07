@@ -253,22 +253,15 @@ export default function EditSessionForm() {
           session_id
         );
         setSessionData(data);
-        console.log("Fetched session data:", data);
 
         if (data.allowed_links && Array.isArray(data.allowed_links)) {
           setWhitelistLinks(data.allowed_links);
-          console.log("Setting whitelist links:", data.allowed_links);
         }
 
         if (data.allowed_students && Array.isArray(data.allowed_students)) {
           const students = data.allowed_students.map((email) => ({ email }));
-          console.log("Setting whitelisted students:", students);
           setWhitelistedStudents(students);
         } else {
-          console.log(
-            "No allowed_students in data or not an array:",
-            data.allowed_students
-          );
           setWhitelistedStudents([]); // Ensure it's initialized as empty array
         }
 
@@ -361,13 +354,6 @@ export default function EditSessionForm() {
           const [hours, minutes] = values.duration.split(":");
           durationInSeconds =
             parseInt(hours, 10) * 3600 + parseInt(minutes, 10) * 60;
-          console.log(
-            "Duration calculated:",
-            values.duration,
-            "->",
-            durationInSeconds,
-            "seconds"
-          );
         } catch (err) {
           console.error("Failed to parse duration:", err);
         }
@@ -410,8 +396,6 @@ export default function EditSessionForm() {
         session_id,
         formData
       );
-
-      console.log("Update session response:", response);
 
       toast.success("Session updated successfully!");
       router.push(`/course/${course_id}/${exam_id}`);

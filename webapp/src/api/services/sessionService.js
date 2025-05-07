@@ -234,34 +234,73 @@ export const sessionService = {
         }
       },
   
-    downloadSubmissions: async (courseId, examId, sessionId) => {
+      downloadSubmissions: async (courseId, examId, sessionId) => {
         try {
-          // Use the rewritten URL path (this will go through Next.js)
+          
           const endpoint = ENDPOINTS.SESSION_SUBMISSIONS_DOWNLOAD(courseId, examId, sessionId);
           
-          console.log("Download endpoint path:", endpoint);
+          // Initialize headers with Accept type
+          const headers = { 
+            "Accept": "application/zip",
+            "X-Requested-With": "XMLHttpRequest"
+          };
           
-          // Use relative URL here so it's requested from the same origin
-          // This allows Next.js to handle the rewrite
+          // Use the same authentication approach as fetchApi
+          // Get user data from cookie for consistent auth handling
+          const cookies = document.cookie.split(';');
+          let userData = null;
+          
+          for (const cookie of cookies) {
+            const trimmedCookie = cookie.trim();
+            if (trimmedCookie.startsWith('currentUser=')) {
+              try {
+                const cookieValue = trimmedCookie.substring('currentUser='.length);
+                userData = JSON.parse(decodeURIComponent(cookieValue));
+                break;
+              } catch (e) {
+                console.error('Failed to parse user cookie for download:', e);
+              }
+            }
+          }
+          
+          if (userData && userData.access_token) {
+            // IMPORTANT: Use the same token handling as in fetchApi
+            const cleanToken = userData.access_token.trim();
+            headers['Authorization'] = `Bearer ${cleanToken}`;
+          } else {
+            console.warn('No access token found in cookie for download - auth header not set');
+          }
+          
+          
           const response = await fetch(endpoint, {
             method: "GET",
-            headers: { 
-              "Accept": "application/zip",
-            },
-            credentials: "include"
+            headers,
+            credentials: "include",
+            mode: "cors"
           });
       
           if (!response.ok) {
-            // Handle specific error codes
+            console.error("Download submissions failed:", {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries([...response.headers.entries()]),
+            });
+            
+            try {
+              const errorData = await response.text();
+              console.error("Error response body:", errorData);
+            } catch (e) {
+              console.error("Could not parse error response");
+            }
+            
             if (response.status === 404) {
               throw new Error("No submissions found for this session");
             } else if (response.status === 403) {
-              throw new Error("You don't have permission to download these submissions");
+              throw new Error("You don't have permission to download these submissions. Please verify you're logged in with the correct account.");
             }
-            throw new Error(`API error: ${response.status}`);
+            throw new Error(`API error: ${response.status} - ${response.statusText}`);
           }
-      
-          // Rest of your function remains the same
+          
           const contentType = response.headers.get("content-type");
           if (!contentType || !contentType.includes("application/zip")) {
             throw new Error(`Unexpected content type: ${contentType}. Expected a zip archive.`);
@@ -301,7 +340,7 @@ export const sessionService = {
           console.error("Error downloading submissions:", error);
           throw error;
         }
-      },
+    },
     
     sendBroadcastMessage: async (user_nmec, message, course_id, exam_id, session_id) => {
         try {

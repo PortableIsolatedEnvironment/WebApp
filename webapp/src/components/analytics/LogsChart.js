@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { fetchApi } from '@/api/client';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 
@@ -32,14 +33,7 @@ export function LogsChart({
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:8000/analytics${endpoint}`);
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
+        const result = await fetchApi(`/analytics${endpoint}`);
         // Determine which field in the result to use based on the dataField parameter
         let chartData;
         if (dataField) {

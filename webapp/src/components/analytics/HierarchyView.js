@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronRight } from "lucide-react";
+import { fetchApi } from "@/api/client";
 
 export function HierarchyView({ entityType, timeRange, onSelectEntity }) {
   const [hierarchyData, setHierarchyData] = useState({
@@ -35,13 +36,7 @@ export function HierarchyView({ entityType, timeRange, onSelectEntity }) {
       try {
         setLoading(true);
         
-        const response = await fetch(`http://localhost:8000/analytics/logs/hierarchy${getTimeParam()}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch hierarchy data: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
+        const data = await fetchApi(`/analytics/logs/hierarchy${getTimeParam()}`);
         setHierarchyData(data);
         
         // Set the filtered items based on entity type

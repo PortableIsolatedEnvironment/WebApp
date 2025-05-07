@@ -283,7 +283,6 @@ export default function SessionClientPage() {
         exam_id,
         session_id
       );
-      console.log("refreshedSession:", refreshedSession);
       if (refreshedSession) {
         setSession(refreshedSession);
       }
@@ -672,12 +671,12 @@ export default function SessionClientPage() {
                     </TableCell>
                     <TableCell>
                       {!sessionUser
-                        ? t("Not Joined")
+                        ? t("NotJoined")
                         : !sessionUser.start_time
-                        ? t("Not Started")
+                        ? t("NotStarted")
                         : sessionUser.end_time
                         ? t("Completed")
-                        : t("In Progress")}
+                        : t("InProgress")}
                     </TableCell>
                     <TableCell>
                       {sessionUser && (
@@ -686,7 +685,7 @@ export default function SessionClientPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleViewUserDetails(sessionUser)}
-                            title={t("View User Details")}
+                            title={t("ViewUserDetails")}
                             className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                           >
                             {t("ViewUser")}
@@ -757,14 +756,14 @@ export default function SessionClientPage() {
             id="fetch-button"
             onClick={handleFetchSubmissions}
           >
-            {t("Fetch Submissions")}
+            {t("FetchSubmissions")}
           </Button>
           <Button
             type="button"
             id="download-button"
             onClick={handleDownloadSubmissions}
           >
-            {t("Download Submissions")}
+            {t("DownloadSubmissions")}
           </Button>
         </div>
         <StartSessionDialog

@@ -12,8 +12,6 @@ const LogViewer = ({ sessionId, user_nmec }) => {
   const [error, setError] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
   const eventSourceRef = useRef(null);
-  console.log("Session ID:", sessionId);
-  console.log("User Nmec:", user_nmec);
 
   const toggleRowExpansion = (index) => {
     setExpandedRows((prev) => ({
