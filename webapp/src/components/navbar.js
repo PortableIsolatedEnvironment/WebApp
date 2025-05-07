@@ -1,5 +1,5 @@
 "use client";
-import { Search, User, LogOut } from "lucide-react";
+import { Search, User, LogOut, ChartLine } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -84,7 +84,11 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
       router.push(`/${locale}/login`);
     }
   };
-  
+
+  // Handle navigation to admin page
+  const navigateToAdmin = () => {
+    router.push(`/${locale}/admin`);
+  };
 
   // Get role icon based on user role
   const getRoleIcon = () => {
@@ -144,6 +148,13 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
 
         {/* Icons */}
         <div className="flex items-center gap-4">
+          {currentUser?.role === "admin" && (
+            <ChartLine
+              className="h-6 w-6 text-white cursor-pointer"
+              title={t("System_Analytics")}
+              onClick={navigateToAdmin}
+            />
+          )}
           <LanguageSwitcher />
           <User
             className="h-6 w-6 text-white cursor-pointer"
