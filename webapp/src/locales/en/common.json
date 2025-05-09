@@ -128,5 +128,15 @@
     "Room_Warning": "Room Required",
     "Duration_Warning": "Duration Required",
     "URL_Validation": "URL Validation",
-    "Link_File_Error": "You cannot provide both files and an exam link; Please choose one option"
+    "Link_File_Error": "You cannot provide both files and an exam link; Please choose one option",
+    "System_Analytics": "System Analytics",
+    "AddStudent": "Add Student",
+    "StudentWhitelistDescription": "Add students to the whitelist to allow them to access the exam session.",
+    "UploadCSV": "Upload CSV",
+    "ClearWhitelist": "Clear Whitelist",
+    "CSVUploadHelp": "Upload a CSV file containing student emails (column 6).",
+    "student@example.com": "student@example.com",
+    "Student Whitelist": "Student Whitelist",
+    "PleaseSelectCSVFile": "Please select a CSV file",
+    "NoValidEmailsFound": "No valid emails found in the CSV file."
 }

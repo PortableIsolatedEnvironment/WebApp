@@ -610,7 +610,7 @@ export default function CreateExamForm() {
                       onClick={handleAddWhitelistLink}
                       disabled={!isValidUrl(whitelistLink)}
                     >
-                      {t("AddLink") || "Add Link"}
+                      {t("Add_Link") || "Add Link"}
                     </Button>
                   </div>
                   
@@ -685,7 +685,7 @@ export default function CreateExamForm() {
                     <div className="flex gap-2">
                       <Input
                         id="student-email"
-                        placeholder="student@example.com"
+                        placeholder={t("student@example.com")}
                         className="flex-1"
                       />
                       <Button 
