@@ -135,7 +135,7 @@
     "UploadCSV": "Upload CSV",
     "ClearWhitelist": "Clear Whitelist",
     "CSVUploadHelp": "Upload a CSV file containing student emails (column 6).",
-    "student@example.com": "student@example.com",
+    "ExampleEmail": "student@example.com",
     "Student Whitelist": "Student Whitelist",
     "PleaseSelectCSVFile": "Please select a CSV file",
     "NoValidEmailsFound": "No valid emails found in the CSV file."

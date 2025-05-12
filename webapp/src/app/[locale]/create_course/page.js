@@ -146,7 +146,6 @@ export default function CreateCourseForm() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#008F4C] hover:bg-[#006B3F]"
             >
               {isSubmitting
                 ? t("Creating") || "Creating..."

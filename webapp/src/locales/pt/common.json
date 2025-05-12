@@ -133,7 +133,7 @@
     "UploadCSV": "Carregar CSV",
     "ClearWhitelist": "Limpar Lista de Permissões",
     "CSVUploadHelp": "Carregue um ficheiro CSV contendo os emails dos alunos (coluna 6).",
-    "student@example.com": "aluno@exemplo.com",
+    "ExampleEmail": "aluno@exemplo.com",
     "Student Whitelist": "Lista de Permissões de Alunos",
     "PleaseSelectCSVFile": "Por favor, selecione um arquivo CSV",
     "NoValidEmailsFound": "Nenhum email válido encontrado no arquivo CSV."
