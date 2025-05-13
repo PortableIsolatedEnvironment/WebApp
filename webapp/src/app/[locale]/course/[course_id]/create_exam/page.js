@@ -685,7 +685,7 @@ export default function CreateExamForm() {
                     <div className="flex gap-2">
                       <Input
                         id="student-email"
-                        placeholder={t("student@example.com")}
+                        placeholder="student@example.com"
                         className="flex-1"
                       />
                       <Button 
