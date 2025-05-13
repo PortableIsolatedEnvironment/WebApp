@@ -158,5 +158,12 @@
     "CourseIdPlaceholder": "Enter Course ID",
     "CourseIdWarning": "Course ID must be at least 2 characters.",
     "CreateCourse": "Create Course",
-    "CreateCourseTitle": "Create New Course"
+    "CreateCourseTitle": "Create New Course",
+    "Session_Expired": "Your session has expired. Please log in again.",
+    "AllFieldsRequired": "All fields are required.",
+    "InvalidEmailFormat": "Invalid email format.",
+    "StudentNotAllowed": "Student accounts cannot access the admin interface.",
+    "InvalidUserRole": "Invalid user role.",
+    "Invalid_Credentials1": "Invalid email or password.",
+    "LoginFailed": "Login failed. Please try again."
 }

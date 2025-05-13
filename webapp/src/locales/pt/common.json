@@ -156,5 +156,12 @@
     "CourseIdPlaceholder": "Insira o ID da UC",
     "CourseIdWarning": "O ID da UC deve ter pelo menos 2 caracteres.",
     "CreateCourse": "Criar UC",
-    "CreateCourseTitle": "Criar Nova UC"
+    "CreateCourseTitle": "Criar Nova UC",
+    "Sessiom_Expired": "A sua sessão expirou. Por favor, faça login novamente.",
+    "AllFieldsRequired": "Todos os campos são obrigatórios.",
+    "InvalidEmailFormat": "Formato de email inválido.",
+    "StudentNotAllowed": "Contas de estudantes não têm acesso à interface de administração.",
+    "InvalidUserRole": "Cargo de utilizador inválido.",
+    "Invalid_Credentials1": "Credenciais inválidas. Por favor, verifique seu email ou password.",
+    "LoginFailed": "Falha no login. Por favor, verifique suas credenciais."
 }

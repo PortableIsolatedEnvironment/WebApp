@@ -72,7 +72,7 @@ export default function LoginForm() {
         }
       } catch (error) {
         // Simple error handling - just show the message
-        setError(t("Invalid_Credentials") || "Invalid email or password");
+        setError(t("Invalid_Credentials1") || "Invalid email or password");
         throw error; // Re-throw for the outer catch
       }
     } catch (error) {
