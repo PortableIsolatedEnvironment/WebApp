@@ -157,5 +157,6 @@
     "CourseId": "Course ID",
     "CourseIdPlaceholder": "Enter Course ID",
     "CourseIdWarning": "Course ID must be at least 2 characters.",
-    "CreateCourse": "Create Course"
+    "CreateCourse": "Create Course",
+    "CreateCourseTitle": "Create New Course"
 }

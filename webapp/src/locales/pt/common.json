@@ -155,5 +155,6 @@
     "CourseId": "ID da UC",
     "CourseIdPlaceholder": "Insira o ID da UC",
     "CourseIdWarning": "O ID da UC deve ter pelo menos 2 caracteres.",
-    "CreateCourse": "Criar UC"
+    "CreateCourse": "Criar UC",
+    "CreateCourseTitle": "Criar Nova UC"
 }
