@@ -4,8 +4,12 @@ import { Link } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { serverCourseService } from "@/api/services/serverService";
+import { requireAuth } from "@/api/serverClient";
 
 export default async function CoursesPage() {
+  // This will redirect to login if user is not authenticated
+  requireAuth();
+  
   const t = await getTranslations();
 
   let courses = [];

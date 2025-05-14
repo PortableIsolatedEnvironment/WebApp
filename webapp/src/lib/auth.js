@@ -83,7 +83,7 @@ export function setUserCookie(userData) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
   const maxAge = 60 * 60 * 24; // 24 hours
   
-  document.cookie = `currentUser=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${maxAge}${secure}; SameSite=Lax`;
+  document.cookie = `currentUser=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${maxAge}${secure};`
   document.dispatchEvent(new Event('userLogin'));
 }
 
