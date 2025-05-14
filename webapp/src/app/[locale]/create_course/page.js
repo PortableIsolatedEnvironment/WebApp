@@ -24,14 +24,6 @@ import { toast, Toaster } from "sonner";
 import { useTranslations } from "next-intl";
 import { courseService } from "@/api/services/courseService";
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Course name must be at least 2 characters.",
-  }),
-  id: z.string().min(2, {
-    message: "Course ID must be at least 2 characters.",
-  }),
-});
 
 export default function CreateCourseForm() {
   const t = useTranslations();
@@ -40,6 +32,15 @@ export default function CreateCourseForm() {
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formSchema = z.object({
+    name: z.string().min(2, {
+      message: t("CourseNameWarning"),
+    }),
+    id: z.string().min(2, {
+      message: t("CourseIdWarning"),
+    }),
+  });
 
   const locale = pathname.split("/")[1];
 

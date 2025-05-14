@@ -1,9 +1,53 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export async function fetchServerApi(endpoint, options = {}) {
+/**
+ * Check if user is authenticated based on cookie
+ * @returns {boolean} Whether the user is authenticated
+ */
+export function isAuthenticated() {
+  const cookieStore = cookies();
+  const currentUserCookie = cookieStore.get('currentUser');
+  
+  if (!currentUserCookie) {
+    return false;
+  }
+  
   try {
+    const userData = JSON.parse(decodeURIComponent(currentUserCookie.value));
+    return !!userData.access_token;
+  } catch (error) {
+    console.error('Failed to parse user cookie:', error);
+    return false;
+  }
+}
+
+/**
+ * Redirects to login if not authenticated
+ * @param {boolean} shouldRedirect - Whether to redirect if not authenticated
+ * @returns {boolean} Whether the user is authenticated
+ */
+export function requireAuth(shouldRedirect = true) {
+  const authenticated = isAuthenticated();
+  
+  if (!authenticated && shouldRedirect) {
+    redirect('/login');
+  }
+  
+  return authenticated;
+}
+
+export async function fetchServerApi(endpoint, options = {}, requireAuthentication = true) {
+  try {
+    // Check authentication if required
+    if (requireAuthentication && !isAuthenticated()) {
+      // If this is being called from a server component where we need auth
+      // we'll redirect to login page
+      redirect('/login');
+    }
+    
     const url = `${API_BASE_URL}${endpoint}`;
     
     // Set default headers
@@ -12,22 +56,20 @@ export async function fetchServerApi(endpoint, options = {}) {
       ...options.headers
     };
     
-    // Try to get authentication token from cookies
-    // Only works in Route Handlers and Server Components
-    try {
-      // Make cookies() usage async
-      const cookieStore = await cookies();
-      const currentUserCookie = cookieStore.get('currentUser');
-      
-      if (currentUserCookie) {
+    // Get authentication token from cookies
+    const cookieStore = cookies();
+    const currentUserCookie = cookieStore.get('currentUser');
+    
+    if (currentUserCookie) {
+      try {
         const userData = JSON.parse(decodeURIComponent(currentUserCookie.value));
         if (userData.access_token) {
-          headers['Authorization'] = `Bearer ${userData.access_token}`;
+          headers['Authorization'] = `Bearer ${userData.access_token.trim()}`;
         }
+      } catch (error) {
+        console.error('Failed to parse user cookie:', error);
+        // Continue without authentication
       }
-    } catch (cookieError) {
-      console.error('Error accessing cookies:', cookieError);
-      // Continue without authentication
     }
     
     // Perform server-side fetch
@@ -46,7 +88,7 @@ export async function fetchServerApi(endpoint, options = {}) {
         errorData = { message: response.statusText };
       }
       
-      throw new Error(`API error (${response.status}): ${errorData.message || JSON.stringify(errorData)}`);
+      throw new Error(`API error (${response.status}): ${JSON.stringify(errorData)}`);
     }
 
     // Check content type before trying to parse as JSON
