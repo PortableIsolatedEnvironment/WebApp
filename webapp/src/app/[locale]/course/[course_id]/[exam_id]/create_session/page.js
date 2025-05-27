@@ -308,7 +308,7 @@ export default function CreateSessionForm() {
         }
 
         toast.success("Session created successfully!");
-        router.push(`/course/${course_id}/${exam_id}`);
+        router.push(`/course/${course_id}/${exam_id}/${session_id}`);
       } catch (apiError) {
         throw new Error(`API error: ${apiError.message}`);
       }
